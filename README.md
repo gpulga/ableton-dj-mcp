@@ -40,6 +40,40 @@ It ships with electronic-music knowledge (house, tech house, melodic techno,
 indie dance and more), so genre and arrangement suggestions start from how those
 styles are actually built.
 
+## What it can do
+
+24 tools, all prefixed `adj-`. Full parameters in the
+[Tools Reference](./docs/Tools-Reference.md).
+
+| Area          | Tool                    | What it does                                                                                  |
+| ------------- | ----------------------- | --------------------------------------------------------------------------------------------- |
+| **Session**   | `adj-connect`           | Connect to Live and load usage guidance. Always the first call                                |
+|               | `adj-context`           | Persistent project memory, plus search of your sample folder                                  |
+| **Live Set**  | `adj-read-live-set`     | Tempo, time signature, groove, Link, locators, tracks, scenes, mix levels                     |
+|               | `adj-update-live-set`   | Set tempo, time signature, groove, Link, punch in/out, overdub, locators                      |
+| **Tracks**    | `adj-read-track`        | Clips, devices, routing, mute/solo/arm, live output meters                                    |
+|               | `adj-create-track`      | Add MIDI, audio or return tracks                                                              |
+|               | `adj-update-track`      | Name, color, volume, pan, mute/solo/arm, routing, group folding                               |
+| **Scenes**    | `adj-read-scene`        | Name, color, tempo, time signature                                                            |
+|               | `adj-create-scene`      | Insert a scene anywhere                                                                       |
+|               | `adj-update-scene`      | Rename, recolor or launch                                                                     |
+| **Clips**     | `adj-read-clip`         | Notes, timing, loop, sample and warp info, play position                                      |
+|               | `adj-create-clip`       | MIDI from bar\|beat notation or audio from a file, in Session or Arrangement                  |
+|               | `adj-update-clip`       | Edit notes, transform velocity/pitch with expressions, loop, pitch, mute, legato              |
+|               | `adj-microsection-mute` | Mute pitches across bar ranges to shape builds and drops                                      |
+|               | `adj-automate` †        | Write, read or clear clip automation. Recipes: filter sweep, fades, sidechain pump, tape stop |
+| **Devices**   | `adj-browse` †          | Search Live's library: instruments, effects, drum kits, presets, samples, packs, plugins      |
+|               | `adj-create-device`     | Load native devices by name, or any library item by URI †                                     |
+|               | `adj-read-device`       | Parameters, rack chains, drum pads and drum map                                               |
+|               | `adj-update-device`     | Set any parameter by name or index, including inside racks                                    |
+| **Editing**   | `adj-duplicate`         | Copy tracks, scenes, clips or devices, including Session → Arrangement                        |
+|               | `adj-delete`            | Remove tracks, scenes, clips or devices                                                       |
+| **Transport** | `adj-playback`          | Play/stop, loop, fire scenes and clips, record, capture MIDI, undo/redo, save                 |
+|               | `adj-select`            | Point Live's UI at a track, scene or clip                                                     |
+| **Generate**  | `adj-generate`          | Euclidean and named rhythms (tresillo, cinquillo, …) as ready-to-use notes                    |
+
+† Uses the Python bridge, which `npm run setup` installs.
+
 ## Requirements
 
 - **Ableton Live 12.3+** with **Max for Live** (Suite, or Standard + M4L)
