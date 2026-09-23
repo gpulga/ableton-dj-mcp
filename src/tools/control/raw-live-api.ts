@@ -2,6 +2,8 @@
 // Copyright (C) 2026 Gabriel Pulga
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+import { uncachedLiveApiObject } from "#src/live-api-adapter/live-api-object-cache.ts";
+import { parseIdOrPath } from "#src/live-api-adapter/live-api-path-utils.ts";
 import { errorMessage } from "#src/shared/error-utils.ts";
 
 const MAX_OPERATIONS = 50;
@@ -227,7 +229,8 @@ export function rawLiveApi(
   }
 
   const defaultPath = "live_set";
-  const api = LiveAPI.from(path ?? defaultPath);
+  // Private object, not the shared cache: goto() below would repoint a shared one.
+  const api = uncachedLiveApiObject(parseIdOrPath(path ?? defaultPath));
   const results: OperationResult[] = [];
 
   for (const operation of operations) {

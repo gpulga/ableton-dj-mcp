@@ -5,18 +5,20 @@
 /* eslint-disable @stylistic/padding-line-between-statements -- switch fallthrough patterns */
 /* eslint-disable @typescript-eslint/no-explicit-any -- dynamic property handling requires any */
 import { type PathLike } from "#src/shared/live-api-path-builders.ts";
+import { liveApiObject } from "./live-api-object-cache.ts";
 import { parseIdOrPath } from "./live-api-path-utils.ts";
 
 if (typeof LiveAPI !== "undefined") {
   /**
-   * Create a LiveAPI instance from an ID or path, automatically handling ID prefixing
+   * Get the LiveAPI object for an ID or path, automatically handling ID prefixing.
+   * Objects are reused per Live object (see live-api-object-cache.ts).
    * @param idOrPath - ID number/string, full path, PathLike, or ["id", "123"] array
-   * @returns New LiveAPI instance
+   * @returns LiveAPI instance
    */
   LiveAPI.from = function (
     idOrPath: string | number | [string, string | number] | PathLike,
   ): LiveAPI {
-    return new LiveAPI(parseIdOrPath(idOrPath));
+    return liveApiObject(parseIdOrPath(idOrPath));
   };
   LiveAPI.prototype.exists = function (this: LiveAPI): boolean {
     // id can be "id 0", "0", or 0 (number) when object doesn't exist
@@ -138,7 +140,7 @@ if (typeof LiveAPI !== "undefined") {
     this: LiveAPI,
     name: string,
   ): LiveAPI[] {
-    return this.getChildIds(name).map((id) => new LiveAPI(id));
+    return this.getChildIds(name).map(liveApiObject);
   };
 
   LiveAPI.prototype.getColor = function (this: LiveAPI): string | null {

@@ -9,6 +9,13 @@ subdirs (see `HOW-TO-WRITE.md`).
 
 ## dev
 
+- [liveapi-creation-slows-all-access](dev/liveapi-creation-slows-all-access.md)
+  [src/live-api-adapter/**, src/tools/**] — every new LiveAPI permanently slows
+  all later Live API access; gc()/freepeer() don't release; reuse via the
+  id-keyed cache (LiveAPI.from/getChildren), never construct directly
+- [liveapi-binds-object-not-path](dev/liveapi-binds-object-not-path.md)
+  [src/live-api-adapter/**] — path-created LiveAPI binds to the object at
+  creation, reports current path; deleted objects keep id but have empty path
 - [getproperty-no-boundary-cost](dev/getproperty-no-boundary-cost.md)
   [src/live-api-adapter/**, src/tools/live-set/read-live-set.ts,
   src/tools/track/read/read-track.ts] — LiveAPI .get()/getProperty() is an

@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 import { beforeEach, vi } from "vitest";
+import { setLiveApiObjectCacheEnabled } from "#src/live-api-adapter/live-api-object-cache.ts";
 import { Folder, clearMockFolderStructure } from "./mocks/mock-folder.ts";
 import { LiveAPI } from "./mocks/mock-live-api.ts";
 import { clearMockRegistry } from "./mocks/mock-registry.ts";
@@ -13,6 +14,8 @@ const g = globalThis as Record<string, unknown>;
 g.LiveAPI = LiveAPI;
 g.Folder = Folder;
 await import("#src/live-api-adapter/live-api-extensions.ts");
+// Tests re-register mocks per test; the session cache is covered by its own tests.
+setLiveApiObjectCacheEnabled(false);
 
 g.Task = Task;
 g.outlet = vi.fn();

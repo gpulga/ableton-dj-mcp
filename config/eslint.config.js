@@ -521,6 +521,7 @@ export default [
     files: ["src/**/*.ts"],
     ignores: [
       "src/live-api-adapter/live-api-extensions.ts", // Defines LiveAPI.from()
+      "src/live-api-adapter/live-api-object-cache.ts", // Constructs every LiveAPI object
       "src/test/mocks/mock-live-api.ts", // Test mock that mirrors live-api-extensions.ts
     ],
     rules: {
