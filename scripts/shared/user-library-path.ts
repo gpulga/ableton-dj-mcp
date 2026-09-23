@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // Shared resolvers for Live User Library subdirectories. Used by
-// scripts/install-device.ts, scripts/dev-hot.ts, and scripts/install-bridge.ts
+// scripts/install/install-device.ts, scripts/dev-hot.ts, and scripts/install/install-bridge.ts
 // so they all target the same paths on every platform.
 
 import { homedir, platform } from "node:os";

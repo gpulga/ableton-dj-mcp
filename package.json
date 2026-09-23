@@ -2,10 +2,10 @@
   "name": "ableton-dj-mcp",
   "version": "2.3.0",
   "description": "MCP server for AI-assisted electronic music production in Ableton Live",
-  "homepage": "https://github.com/gabrielpulga/ableton-dj-mcp",
+  "homepage": "https://github.com/gpulga/ableton-dj-mcp",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/gabrielpulga/ableton-dj-mcp.git"
+    "url": "git+https://github.com/gpulga/ableton-dj-mcp.git"
   },
   "type": "module",
   "imports": {
@@ -56,9 +56,10 @@
     "duplication:e2e": "printf 'E2E ' && jscpd -s -c config/.jscpd-e2e.json",
     "duplication:verbose": "jscpd -c config/.jscpd.json && jscpd -c config/.jscpd-tests.json && jscpd -c config/.jscpd-scripts.json && jscpd -c config/.jscpd-e2e.json",
     "loc": "node scripts/loc/loc.ts",
+    "setup": "node scripts/install/setup.ts",
     "init:workspace": "node scripts/init-workspace.ts",
-    "install:device": "node scripts/install-device.ts",
-    "install:bridge": "node scripts/install-bridge.ts",
+    "install:device": "node scripts/install/install-device.ts",
+    "install:bridge": "node scripts/install/install-bridge.ts",
     "start:live": "node scripts/start-live.ts",
     "tc": "npm run typecheck",
     "typecheck": "echo 'Typechecking...' && node scripts/run-parallel.ts typecheck:src typecheck:scripts typecheck:e2e && echo 'No typecheck violations.\n'",
