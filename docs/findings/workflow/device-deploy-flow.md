@@ -12,8 +12,9 @@ bytecode per session — restart Live (or eject + reinsert device) to load updat
 JS.
 
 `npm run install:device` (the primary deploy path) reads the built JS straight
-from `dist/`, kept fresh automatically by the `rebuild-dist.yml` CI workflow on
-every push to `main` — no manual copy needed. The manual `dist/` →
+from `dist/`, which the release workflow rebuilds on each release PR — so it
+matches the last release, not necessarily `main`'s latest source. Run
+`npm run build` first to deploy unreleased code. The manual `dist/` →
 `max-for-live-device/` copy only matters if you drag
 `max-for-live-device/Ableton_DJ_MCP.amxd` directly onto a track instead of using
 `install:device` — `npm run dev:hot`'s watcher handles that copy automatically

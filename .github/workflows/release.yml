@@ -9,6 +9,11 @@ permissions:
   pull-requests: write
   actions: write
 
+# Serialize runs: each one rewrites the release PR branch.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
   release-please:
     name: Release Please
@@ -19,18 +24,41 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           config-file: config/release-please-config.json
           manifest-file: config/.release-please-manifest.json
-      - name: Dispatch CI for the release PR
+
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Rebuild dist on the release PR and dispatch CI
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # main requires 5 status checks, but release-please's PR is created/
-          # updated with GITHUB_TOKEN, which never triggers push/pull_request
-          # workflow runs (GitHub Actions anti-recursion rule). Without this,
-          # the release PR sits BLOCKED forever with no checks ever recorded
-          # on its head commit. Dispatch CI explicitly against its branch so
-          # the resulting check runs attach to that commit and satisfy the
-          # requirement.
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
           for branch in $(gh pr list --state open --json headRefName \
             -q '.[] | select(.headRefName | startswith("release-please--")) | .headRefName'); do
+            # dist/ is rebuilt only here, so it lands on main exactly once per
+            # release (with the bumped version baked in) instead of as a
+            # separate bot PR after every merge. release-please rewrites this
+            # branch on each push to main, so the rebuild runs every time.
+            git checkout -B "$branch" "origin/$branch"
+            npm ci
+            RELEASE_BUILD=true npm run build
+            git add dist/
+            if ! git diff --cached --quiet; then
+              git commit -m "chore: rebuild dist"
+              git push origin "$branch"
+            fi
+
+            # Pushes and PRs made with GITHUB_TOKEN never trigger
+            # push/pull_request workflows (GitHub's anti-recursion rule), so
+            # the required checks would never appear and the release PR would
+            # sit BLOCKED forever. Dispatch CI explicitly against the branch.
             gh workflow run ci.yml --ref "$branch"
           done
