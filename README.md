@@ -52,6 +52,11 @@ clicks it lists inside Live, then ask your AI: **"connect to ableton"**.
 
 Full walkthrough and troubleshooting: **[docs/Setup.md](./docs/Setup.md)**.
 
+**Claude Desktop, no terminal:** grab the `.zip` and `.mcpb` from the
+[latest release](https://github.com/gpulga/ableton-dj-mcp/releases/latest) and
+follow
+[these steps](./docs/Setup.md#quick-install-without-a-terminal-claude-desktop).
+
 ### Let your AI install it
 
 Open Claude Code (or another coding agent) in any folder and paste:

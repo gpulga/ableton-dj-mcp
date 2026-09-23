@@ -36,6 +36,19 @@ To add a new file with a hardcoded version:
    `export const X = "1.0.0"; // x-release-please-version`
 2. Add to `config/release-please-config.json` under `extra-files`
 
+## Release assets
+
+When a release is created, `release.yml` checks out the tag and runs
+`npm run release:package`, which uploads two files to the GitHub release:
+
+- `ableton-dj-mcp-<version>.zip`: device files + Python bridge in User Library
+  layout, with `INSTALL.txt`
+- `ableton-dj-mcp-<version>.mcpb`: Claude Desktop extension (portal + manifest,
+  built with `@anthropic-ai/mcpb`)
+
+Run `npm run release:package` locally to inspect them in `release/`
+(gitignored). It needs `zip` on PATH.
+
 ## Deploying a new version locally
 
 `dist/` is rebuilt once per release, not on every merge. The release workflow

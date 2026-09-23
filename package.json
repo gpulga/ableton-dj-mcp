@@ -60,6 +60,7 @@
     "init:workspace": "node scripts/init-workspace.ts",
     "install:device": "node scripts/install/install-device.ts",
     "install:bridge": "node scripts/install/install-bridge.ts",
+    "release:package": "node scripts/release/package-release.ts",
     "start:live": "node scripts/start-live.ts",
     "tc": "npm run typecheck",
     "typecheck": "echo 'Typechecking...' && node scripts/run-parallel.ts typecheck:src typecheck:scripts typecheck:e2e && echo 'No typecheck violations.\n'",

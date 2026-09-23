@@ -13,29 +13,9 @@
 
 import { copyFileSync, existsSync, mkdirSync } from "node:fs";
 import { platform } from "node:os";
-import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
+import { DEVICE_FILES, distDir } from "../shared/device-files.ts";
 import { resolveUserLibraryDir } from "../shared/user-library-path.ts";
-
-const here = dirname(fileURLToPath(import.meta.url));
-const repoRoot = resolve(here, "../..");
-const sourceDir = join(repoRoot, "max-for-live-device");
-const distDir = join(repoRoot, "dist");
-
-const STATIC_FILES = [
-  "Ableton_DJ_MCP.amxd",
-  "server-status.maxpat",
-  "tab-main.maxpat",
-  "tab-context.maxpat",
-  "tab-setup.maxpat",
-] as const;
-
-const BUILT_FILES = ["live-api-adapter.js", "mcp-server.mjs"] as const;
-
-const DEVICE_FILES = [
-  ...STATIC_FILES.map((file) => ({ file, dir: sourceDir })),
-  ...BUILT_FILES.map((file) => ({ file, dir: distDir })),
-];
 
 /**
  * Verify all source files exist before copying.
