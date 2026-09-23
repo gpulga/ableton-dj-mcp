@@ -103,7 +103,7 @@
     "jscpd": "^5.0.15",
     "peggy": "^5.1.0",
     "prettier": "^3.9.6",
-    "rollup": "^4.62.4",
+    "rollup": "^4.63.4",
     "rollup-plugin-esbuild": "^6.2.1",
     "typescript": "^6.0.3",
     "vitest": "^4.1.11"
