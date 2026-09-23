@@ -26,5 +26,6 @@ batching individual property reads would not reduce any actual crossing cost.
 
 Considering "batch the property reads" as a fix for `adj-read-live-set` /
 `adj-read-track` feeling slow on large sets — there's no per-property boundary
-cost to amortize. Look at payload size or Live main-thread enumeration work
-instead.
+cost to amortize. The slowdown that did exist came from creating LiveAPI
+objects, see
+[liveapi-creation-slows-all-access](liveapi-creation-slows-all-access.md).
