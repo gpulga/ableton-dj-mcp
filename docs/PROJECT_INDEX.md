@@ -18,7 +18,7 @@ this to orient before any task; load the linked file when relevant.
 
 ## Tools
 
-- [Tools-Reference.md](Tools-Reference.md) — canonical catalog of all 24 `adj-*`
+- [Tools-Reference.md](Tools-Reference.md) — canonical catalog of all 25 `adj-*`
   tools, with actions and parameters
 - [contributing/Read-Tool-Includes.md](contributing/Read-Tool-Includes.md) —
   `include` parameter conventions for all read tools
