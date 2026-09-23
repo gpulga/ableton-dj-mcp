@@ -66,7 +66,7 @@ interface UpdateHighlightedClipSlotOptions {
  * @param trackIndex - Track index (0-based)
  * @returns Track path string or null if invalid category
  */
-export function buildTrackPath(
+function buildTrackPath(
   category?: string | null,
   trackIndex?: number | null,
 ): TrackPath | null {
@@ -286,7 +286,7 @@ export function updateDeviceSelection({
  * @param options.songView - LiveAPI instance for live_set view
  * @param options.clipSlot - Clip slot coordinates
  */
-export function updateHighlightedClipSlot({
+function updateHighlightedClipSlot({
   songView,
   clipSlot,
 }: UpdateHighlightedClipSlotOptions): void {

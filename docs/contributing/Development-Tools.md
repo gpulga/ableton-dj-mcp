@@ -198,18 +198,20 @@ npm run test:coverage
 # Format check
 npm run format:check
 
-# Manual testing
-node scripts/test/test-claude-desktop-extension.ts
+# Manual testing against the running device
+node scripts/adj-client.ts tools/list
 ```
 
 ## Debugging Tips
 
 ### Enable Verbose Logging
 
-For desktop extension debugging:
+The portal (stdio bridge) writes log files when these are set in its MCP client
+env:
 
 ```bash
-ENABLE_LOGGING=true VERBOSE_LOGGING=true node scripts/test/test-claude-desktop-extension.ts
+claude mcp add ableton-dj-mcp -e ENABLE_LOGGING=true -e VERBOSE_LOGGING=true \
+  -- node "/absolute/path/to/ableton-dj-mcp/dist/ableton-dj-mcp-portal.js"
 ```
 
 ### Check Log Files

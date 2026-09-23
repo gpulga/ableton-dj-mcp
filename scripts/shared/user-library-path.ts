@@ -14,7 +14,7 @@ import { join } from "node:path";
  * unsupported platforms (Live runs on macOS/Windows only).
  * @returns Absolute path or null
  */
-export function resolveUserLibraryRoot(): string | null {
+function resolveUserLibraryRoot(): string | null {
   const home = homedir();
 
   switch (platform()) {
