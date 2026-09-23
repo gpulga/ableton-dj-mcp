@@ -203,6 +203,41 @@ class FindByUriTest(unittest.TestCase):
     def test_empty_uri_returns_none(self):
         self.assertIsNone(browser_ops.find_by_uri(_build_browser(), ""))
 
+    def test_infers_category_from_uri_and_skips_other_roots(self):
+        class Trap(object):
+            name = "Packs"
+            uri = ""
+
+            @property
+            def children(self):
+                raise AssertionError("walked a root the URI does not point at")
+
+        operator = FakeItem(name="Operator", uri="query:Synths#Operator",
+                            is_device=True, is_loadable=True)
+        browser = FakeBrowser(instruments=FakeItem(children=[operator]),
+                              packs=Trap())
+        self.assertIs(browser_ops.find_by_uri(browser, "query:Synths#Operator"),
+                      operator)
+
+    def test_falls_back_to_all_roots_when_prefix_root_misses(self):
+        odd = FakeItem(name="Odd", uri="query:Synths#Odd", is_loadable=True)
+        browser = FakeBrowser(instruments=FakeItem(children=[]),
+                              drums=FakeItem(children=[odd]))
+        self.assertIs(browser_ops.find_by_uri(browser, "query:Synths#Odd"), odd)
+
+    def test_prefers_shallow_match(self):
+        deep = FakeItem(name="Deep", uri="query:Synths#Dup")
+        shallow = FakeItem(name="Shallow", uri="query:Synths#Dup")
+        folder = FakeItem(name="F", is_folder=True,
+                          children=[FakeItem(is_folder=True, children=[deep])])
+        browser = FakeBrowser(instruments=FakeItem(children=[folder, shallow]))
+        self.assertIs(browser_ops.find_by_uri(browser, "query:Synths#Dup"), shallow)
+
+    def test_category_for_uri(self):
+        self.assertEqual(browser_ops.category_for_uri("query:AudioFx#Reverb"),
+                         "audio_effects")
+        self.assertIsNone(browser_ops.category_for_uri("query:Unknown#X"))
+
 
 class SerializeItemTest(unittest.TestCase):
     def test_leaf_no_children_when_max_depth_zero(self):

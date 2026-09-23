@@ -43,10 +43,9 @@ datagram per request and reply. See the parent repo spec for the full schema.
 | File                | Purpose                                                |
 | ------------------- | ------------------------------------------------------ |
 | `__init__.py`       | Live entry point; returns the `BrowserBridge` instance |
-| `BrowserBridge.py`  | ControlSurface subclass, owns the UDP loop             |
+| `BrowserBridge.py`  | ControlSurface subclass; polls UDP on Live's main tick |
 | `browser_ops.py`    | Pure tree walking / serialisation helpers              |
 | `automation_ops.py` | Pure clip automation-envelope helpers                  |
-| `queue_runner.py`   | Thread-safe queues bridging socket and main thread     |
 | `version.py`        | Version + default port constants                       |
 
 `browser_ops.py` and `automation_ops.py` are import-clean (no Live import) so

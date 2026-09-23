@@ -84,5 +84,114 @@ class SendFallbackTest(unittest.TestCase):
         self.assertEqual(len(sock.sent), 1)
 
 
+class FakeNonBlockingSocket(object):
+    """Datagrams queued up front; empty queue raises like a real
+    non-blocking socket. Entries may be exceptions to raise instead."""
+
+    def __init__(self, incoming):
+        self.incoming = list(incoming)
+        self.sent = []
+
+    def recvfrom(self, bufsize):
+        if not self.incoming:
+            raise BlockingIOError(35, "Resource temporarily unavailable")
+        item = self.incoming.pop(0)
+        if isinstance(item, Exception):
+            raise item
+        return item, ("127.0.0.1", 50000)
+
+    def sendto(self, data, addr):
+        self.sent.append(json.loads(data.decode("utf-8")))
+
+
+def _request(req_id, op, args=None):
+    return json.dumps({"id": req_id, "op": op, "args": args or {}}).encode("utf-8")
+
+
+class MainThreadPollTest(unittest.TestCase):
+    def test_request_is_answered_in_the_same_tick(self):
+        sock = FakeNonBlockingSocket([_request("r1", "ping")])
+        bridge = _make_bridge(sock)
+
+        bridge.update_display()
+
+        self.assertEqual(len(sock.sent), 1)
+        self.assertEqual(sock.sent[0]["id"], "r1")
+        self.assertTrue(sock.sent[0]["ok"])
+        self.assertIn("version", sock.sent[0]["result"])
+
+    def test_empty_socket_is_a_no_op(self):
+        sock = FakeNonBlockingSocket([])
+        bridge = _make_bridge(sock)
+
+        bridge.update_display()  # must not raise or block
+
+        self.assertEqual(sock.sent, [])
+
+    def test_caps_requests_per_tick(self):
+        sock = FakeNonBlockingSocket([_request("r%d" % i, "ping") for i in range(10)])
+        bridge = _make_bridge(sock)
+
+        bridge._poll_socket(max_items=8)
+        self.assertEqual(len(sock.sent), 8)
+
+        bridge._poll_socket(max_items=8)
+        self.assertEqual([m["id"] for m in sock.sent[8:]], ["r8", "r9"])
+
+    def test_invalid_json_gets_an_error_reply(self):
+        sock = FakeNonBlockingSocket([b"not json"])
+        bridge = _make_bridge(sock)
+
+        bridge.update_display()
+
+        self.assertFalse(sock.sent[0]["ok"])
+        self.assertEqual(sock.sent[0]["error"]["code"], "INVALID_ARGS")
+
+    def test_missing_op_gets_an_error_reply_with_its_id(self):
+        sock = FakeNonBlockingSocket([json.dumps({"id": "r2"}).encode("utf-8")])
+        bridge = _make_bridge(sock)
+
+        bridge.update_display()
+
+        self.assertEqual(sock.sent[0]["id"], "r2")
+        self.assertEqual(sock.sent[0]["error"]["code"], "INVALID_ARGS")
+
+    def test_non_object_json_gets_an_error_reply(self):
+        sock = FakeNonBlockingSocket([b"[1, 2]"])
+        bridge = _make_bridge(sock)
+
+        bridge.update_display()
+
+        self.assertIsNone(sock.sent[0]["id"])
+        self.assertEqual(sock.sent[0]["error"]["code"], "INVALID_ARGS")
+
+    def test_recv_error_is_skipped_and_polling_continues(self):
+        sock = FakeNonBlockingSocket([ConnectionResetError(54, "reset"), _request("r3", "ping")])
+        bridge = _make_bridge(sock)
+
+        bridge.update_display()
+
+        self.assertEqual([m["id"] for m in sock.sent], ["r3"])
+
+    def test_unknown_op_is_answered_not_raised(self):
+        sock = FakeNonBlockingSocket([_request("r4", "nope")])
+        bridge = _make_bridge(sock)
+
+        bridge.update_display()
+
+        self.assertEqual(sock.sent[0]["error"]["code"], "INVALID_ARGS")
+
+    def test_tick_never_raises(self):
+        bridge = _make_bridge(FakeNonBlockingSocket([]))
+        bridge._poll_socket = lambda: (_ for _ in ()).throw(RuntimeError("boom"))
+
+        bridge.update_display()  # swallowed and logged
+
+    def test_closed_socket_is_a_no_op(self):
+        bridge = _make_bridge(None)
+
+        bridge.update_display()
+
+
 if __name__ == "__main__":
     unittest.main()
