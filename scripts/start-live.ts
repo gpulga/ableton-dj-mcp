@@ -7,7 +7,6 @@
 // Usage:
 //   npm run start:live                  -> open Live with whatever the OS launches by default
 //   npm run start:live -- path.als      -> open Live with a specific .als
-//   npm run start:live -- --template    -> open Live with the bundled template.als (if present)
 //
 // macOS: uses `open -b com.ableton.live` (works across versions/editions) or
 //        `open <path.als>` when a file is supplied.
@@ -18,14 +17,13 @@
 import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import { platform } from "node:os";
-import { dirname, isAbsolute, join, resolve } from "node:path";
+import { dirname, isAbsolute, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ABLETON_BUNDLE_ID = "com.ableton.live";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "..");
-const bundledTemplate = join(repoRoot, "template.als");
 
 const filePath = resolveFileArg(process.argv.slice(2));
 
@@ -38,7 +36,6 @@ launchLive(filePath);
 
 /**
  * Resolve which .als file (if any) to open. Supports:
- *   --template      -> bundled template.als at repo root (errors if missing)
  *   <path>          -> any explicit path, resolved against cwd
  *   (no args)       -> null, meaning launch Live with no file
  * @param argv - process.argv.slice(2)
@@ -53,20 +50,6 @@ function resolveFileArg(argv: string[]): string | null {
 
   if (first === undefined) {
     return null;
-  }
-
-  if (first === "--template") {
-    if (!existsSync(bundledTemplate)) {
-      console.error(
-        `start-live failed: --template requested but ${bundledTemplate} not found.`,
-      );
-      console.error(
-        "The bundled template.als has not been added to this repo yet.",
-      );
-      process.exit(1);
-    }
-
-    return bundledTemplate;
   }
 
   // Relative paths resolve against INIT_CWD (the user's invocation dir, set by
