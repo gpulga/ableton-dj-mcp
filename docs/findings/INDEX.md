@@ -60,6 +60,9 @@ subdirs (see `HOW-TO-WRITE.md`).
   src/mcp-server/browser-bridge-client.ts] — browse replies over 9216 bytes fail
   sendto() with EMSGSIZE and are silently dropped, presenting as a timeout, not
   a slow-enumeration bug
+- [live-python-background-threads-starved](dev/browser/live-python-background-threads-starved.md)
+  [live_browser_bridge/**] — Live's Python barely schedules background threads;
+  socket I/O on a thread cost ~700 ms per op, polling in update_display ~100 ms
 - [m4l-no-browser-api](dev/browser/m4l-no-browser-api.md) [src/tools/browse/**,
   src/tools/device/create/**, live_browser_bridge/**,
   src/mcp-server/browser-bridge-client.ts, src/mcp-server/bridge-dispatcher.ts]

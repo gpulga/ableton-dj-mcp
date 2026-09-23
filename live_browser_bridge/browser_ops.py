@@ -12,6 +12,7 @@ The functions tolerate Live's mix of attribute/iterator-style children
 (``BrowserItem.children`` is a sequence in modern versions; older versions
 exposed ``iter_children``)."""
 
+import collections
 import itertools
 import json
 
@@ -203,33 +204,66 @@ def browse(browser, category=None, path=None, search=None, depth=1, limit=100):
     }
 
 
-def find_by_uri(browser, uri, category=None):
-    """Depth-first search for the first BrowserItem whose ``uri`` matches.
+# URI prefix (the part before "#") of the items under each category root, as
+# reported by Live 12.4. Lets find_by_uri search the right root first: a walk
+# over the whole browser cost hundreds of ms per URI load (#326).
+URI_PREFIX_CATEGORY = {
+    "query:Synths": "instruments",
+    "query:AudioFx": "audio_effects",
+    "query:MidiFx": "midi_effects",
+    "query:Drums": "drums",
+    "query:Sounds": "sounds",
+    "query:Samples": "samples",
+    "query:Clips": "clips",
+    "query:UserLibrary": "user_library",
+    "query:LivePacks": "packs",
+    "query:Plugins": "plugins",
+    "query:M4L": "max_for_live",
+}
 
-    Searches all categories when ``category`` is None; restricts to that
-    category root otherwise. Returns the matching item or None."""
-    if not uri:
-        return None
-    roots = (
-        [get_category_root(browser, category)]
-        if category is not None
-        else [
-            getattr(browser, attr)
-            for attr in CATEGORY_ATTRS
-            if hasattr(browser, attr) and getattr(browser, attr) is not None
-        ]
-    )
+# Cap the walk so a malformed URI can't spin Live for ages.
+MAX_FIND_NODES = 50_000
 
+
+def category_for_uri(uri):
+    """Category attr whose items carry this URI prefix, or None if unknown."""
+    return URI_PREFIX_CATEGORY.get(uri.split("#", 1)[0])
+
+
+def _search(roots, uri):
+    """Breadth-first search, so shallow items (most loadable devices) are
+    found without descending into large folders first."""
+    queue = collections.deque(roots)
     seen = 0
-    stack = list(roots)
-    # Cap the walk so a malformed URI can't spin Live for ages. Live's full
-    # browser is large but a few thousand items is enough headroom.
-    MAX_NODES = 50_000
-    while stack and seen < MAX_NODES:
-        item = stack.pop()
+    while queue and seen < MAX_FIND_NODES:
+        item = queue.popleft()
         seen += 1
         if getattr(item, "uri", None) == uri:
             return item
-        for child in children_of(item):
-            stack.append(child)
+        queue.extend(children_of(item))
     return None
+
+
+def find_by_uri(browser, uri, category=None):
+    """First BrowserItem whose ``uri`` matches, or None.
+
+    With ``category``, searches only that root. Otherwise searches the root
+    implied by the URI prefix first, then every root as a fallback."""
+    if not uri:
+        return None
+    if category is not None:
+        return _search([get_category_root(browser, category)], uri)
+
+    inferred = category_for_uri(uri)
+    inferred_root = getattr(browser, inferred, None) if inferred else None
+    if inferred_root is not None:
+        found = _search([inferred_root], uri)
+        if found is not None:
+            return found
+
+    roots = [
+        getattr(browser, attr)
+        for attr in CATEGORY_ATTRS
+        if getattr(browser, attr, None) is not None
+    ]
+    return _search(roots, uri)

@@ -13,17 +13,19 @@ Wire-protocol:
     Reply NO: {"id": "...", "ok": false, "error": {"code": "...", "message": "..."}}
 
 Threading:
-    - Socket thread: blocking ``recvfrom`` loop. Validates JSON, hands off to
-      the request queue, drains the response queue and sends UDP replies.
-    - Live main thread: ``update_display`` is called by Live every 100 ms; we
-      drain the request queue there and execute browser ops, then push results
-      onto the response queue."""
+    Everything runs on Live's main thread. ``update_display`` is called by Live
+    about every 100 ms; each tick reads pending datagrams from a non-blocking
+    socket, runs the ops (LOM access must happen on the main thread) and sends
+    the replies right away.
+
+    There is deliberately no socket thread. Live's embedded Python schedules
+    background threads so rarely that a thread-based receive/reply loop added
+    ~700 ms to every op, even a no-op ping (#326)."""
 
 import errno
 import json
 import os
 import socket
-import threading
 import traceback
 
 try:
@@ -51,7 +53,6 @@ except ImportError:  # pragma: no cover - tests stub the base class
             pass
 
 from . import automation_ops, browser_ops
-from .queue_runner import BridgeQueues
 from .version import BRIDGE_VERSION, DEFAULT_PORT
 
 
@@ -64,11 +65,7 @@ class BrowserBridge(ControlSurface):
 
     def __init__(self, c_instance):
         ControlSurface.__init__(self, c_instance)
-        self._queues = BridgeQueues()
         self._socket = None
-        self._addr_by_id = {}
-        self._socket_thread = None
-        self._stop_event = threading.Event()
         self._port = self._resolve_port()
         self._start_socket()
         self._log("Ableton DJ MCP browser bridge %s listening on udp:%d" %
@@ -90,54 +87,54 @@ class BrowserBridge(ControlSurface):
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             sock.bind(("127.0.0.1", self._port))
-            sock.settimeout(0.25)
+            sock.setblocking(False)
             self._socket = sock
         except Exception as exc:
             self._log("failed to bind udp:%d (%s); bridge inactive" %
                       (self._port, exc))
             self._socket = None
+
+    # ----------------------------------------------------------- main thread
+
+    def update_display(self):
+        # Called by Live ~10 Hz. Receive, run and reply in the same tick so
+        # all LOM access stays on the main thread.
+        try:
+            self._poll_socket()
+        except Exception:
+            # Never let a bridge failure crash Live's display tick.
+            self._log("bridge tick error:\n%s" % traceback.format_exc())
+
+    def _poll_socket(self, max_items=MAX_REQUESTS_PER_TICK):
+        """Handle up to ``max_items`` pending datagrams without blocking."""
+        for _ in range(max_items):
+            if self._socket is None:
+                return
+            try:
+                data, addr = self._socket.recvfrom(SOCKET_RECV_BUF)
+            except BlockingIOError:
+                return  # nothing pending
+            except OSError as exc:
+                # e.g. Windows reports an earlier failed send as
+                # ConnectionResetError on the next recv; skip it.
+                self._log("udp recv failed: %s" % exc)
+                continue
+            self._handle_datagram(data, addr)
+
+    def _handle_datagram(self, data, addr):
+        try:
+            message = json.loads(data.decode("utf-8"))
+        except Exception as exc:
+            self._send(addr, self._error(None, "INVALID_ARGS",
+                       "could not parse request: %s" % exc))
             return
-
-        self._socket_thread = threading.Thread(
-            target=self._socket_loop, name="adj-browser-bridge"
-        )
-        self._socket_thread.daemon = True
-        self._socket_thread.start()
-
-    # --------------------------------------------------------- socket thread
-
-    def _socket_loop(self):
-        sock = self._socket
-        while not self._stop_event.is_set():
-            self._drain_responses_to_socket()
-            try:
-                data, addr = sock.recvfrom(SOCKET_RECV_BUF)
-            except socket.timeout:
-                continue
-            except OSError:
-                break
-            try:
-                message = json.loads(data.decode("utf-8"))
-            except Exception as exc:
-                self._send(addr, self._error(None, "INVALID_ARGS",
-                           "could not parse request: %s" % exc))
-                continue
-            req_id = message.get("id")
-            op = message.get("op")
-            if not req_id or not op:
-                self._send(addr, self._error(req_id, "INVALID_ARGS",
-                           "request missing id or op"))
-                continue
-            self._addr_by_id[req_id] = addr
-            self._queues.submit_request(message)
-
-    def _drain_responses_to_socket(self):
-        for response in self._queues.drain_responses():
-            req_id = response.get("id")
-            addr = self._addr_by_id.pop(req_id, None) if req_id else None
-            if addr is None:
-                continue
-            self._send(addr, response)
+        if not isinstance(message, dict) or not message.get("id") \
+                or not message.get("op"):
+            req_id = message.get("id") if isinstance(message, dict) else None
+            self._send(addr, self._error(req_id, "INVALID_ARGS",
+                       "request missing id or op"))
+            return
+        self._send(addr, self._handle_request(message))
 
     def _send(self, addr, payload):
         if self._socket is None:
@@ -165,20 +162,6 @@ class BrowserBridge(ControlSurface):
         except Exception as fallback_exc:
             # Truly nothing more we can do — the caller will time out.
             self._log("udp fallback send also failed: %s" % fallback_exc)
-
-    # ----------------------------------------------------------- main thread
-
-    def update_display(self):
-        # Called by Live ~10 Hz. Process pending bridge requests here so all
-        # LOM access happens on the main thread.
-        try:
-            requests = self._queues.drain_requests(max_items=MAX_REQUESTS_PER_TICK)
-            for message in requests:
-                response = self._handle_request(message)
-                self._queues.submit_response(response)
-        except Exception:
-            # Never let a bridge failure crash Live's display tick.
-            self._log("bridge tick error:\n%s" % traceback.format_exc())
 
     def _handle_request(self, message):
         req_id = message.get("id")
@@ -341,7 +324,6 @@ class BrowserBridge(ControlSurface):
     # ----------------------------------------------------------- shutdown
 
     def disconnect(self):
-        self._stop_event.set()
         if self._socket is not None:
             try:
                 self._socket.close()

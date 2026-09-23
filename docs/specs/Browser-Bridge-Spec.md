@@ -262,23 +262,24 @@ Drum-kit compound (`deviceName: "Drum Rack"` + kit `browserUri`):
 
 ```
 __init__.py             # Live entry point: returns BrowserBridge instance
-BrowserBridge.py        # ControlSurface subclass, owns the UDP loop
+BrowserBridge.py        # ControlSurface subclass; polls UDP on Live's main tick
 browser_ops.py          # Pure functions: walk tree, find by uri, etc.
-queue_runner.py         # Thread-safe queue: socket thread → main thread
+automation_ops.py       # Pure functions: clip automation envelopes
 README.md               # Install instructions
 LICENSE                 # GPL-3.0-or-later, matches repo
 ```
 
 Threading model (forced by Live):
 
-- Socket thread owns the UDP loop. Receives JSON, validates, enqueues.
-- Live's main thread polls the queue once per scheduler tick (use
-  `Live.Base.Timer` or the `ControlSurface.update_display` callback) and
-  executes browser ops. Replies pushed back to a response queue.
-- Socket thread drains response queue, sends UDP replies.
-
-This pattern is what `ableton-liveapi-tools` uses and is necessary because
-direct LOM access from a non-main thread crashes Live.
+- Direct LOM access from a non-main thread crashes Live, so all ops run on the
+  main thread, in the `ControlSurface.update_display` callback (~100 ms).
+- The socket is non-blocking and read in that same callback: each tick handles
+  up to 8 pending datagrams and sends each reply immediately.
+- There is no socket thread. An earlier design received and replied on a
+  background thread and handed work over through queues; Live's embedded Python
+  schedules background threads so rarely that it added ~700 ms to every op, even
+  a no-op ping (#326). Polling on the tick brings an op down to at most one tick
+  (~50 ms on average).
 
 ---
 
