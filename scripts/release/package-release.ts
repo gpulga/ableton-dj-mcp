@@ -184,7 +184,7 @@ Requires Ableton Live 12.3+ with Max for Live, on macOS or Windows.
    - Settings (Preferences) > Link, Tempo & MIDI > Control Surface:
      pick "${BRIDGE_SURFACE_NAME}".
    - Browser > Max for Live > Max MIDI Effect: drag "Ableton_DJ_MCP" onto
-     a track (a return track is best). Wait for "MCP server running on :3350".
+     a track (a return track is best). Wait for the green "Ready to build".
    - Recommended: File > Save Live Set as Default Set.
 
 3. Connect your AI:
