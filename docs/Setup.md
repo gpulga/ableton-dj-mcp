@@ -2,8 +2,9 @@
 
 Get from zero to "AI controls my Live set" in about 5 minutes.
 
-**Contents:** [Requirements](#requirements) · [Install](#1-install) ·
-[Finish in Live](#2-finish-in-live) ·
+**Contents:** [Requirements](#requirements) ·
+[No-terminal install](#quick-install-without-a-terminal-claude-desktop) ·
+[Install](#1-install) · [Finish in Live](#2-finish-in-live) ·
 [Connect your AI](#3-connect-your-ai-client) · [Verify](#4-verify) ·
 [For AI agents](#for-ai-agents-installing-this-for-a-user) · [Update](#update) ·
 [Uninstall](#uninstall) · [Optional extras](#optional-extras) ·
@@ -12,9 +13,26 @@ Get from zero to "AI controls my Live set" in about 5 minutes.
 ## Requirements
 
 - Ableton Live 12.3+ with Max for Live
-- Node.js 24+ (`node -v` to check; get it from [nodejs.org](https://nodejs.org))
+- Node.js 24+ for the git install (`node -v` to check;
+  [nodejs.org](https://nodejs.org)). Not needed for the Claude Desktop `.mcpb`
 - macOS or Windows
 - An MCP client (Claude Code, Claude Desktop, Cursor, …)
+
+## Quick install without a terminal (Claude Desktop)
+
+From the
+[latest release](https://github.com/gpulga/ableton-dj-mcp/releases/latest)
+download both files:
+
+- **`ableton-dj-mcp-<version>.zip`**: unzip it and copy its `Presets` and
+  `Remote Scripts` folders into your Ableton User Library (macOS:
+  `~/Music/Ableton/User Library/`, Windows: `Documents\Ableton\User Library\`),
+  merging with what's there. Then do [step 2](#2-finish-in-live).
+- **`ableton-dj-mcp-<version>.mcpb`**: double-click it to install into Claude
+  Desktop. No Node.js needed; Claude Desktop runs it.
+
+Then ask Claude: "connect to ableton". For Claude Code or other clients, use the
+git install below.
 
 ## 1. Install
 

@@ -20,6 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: googleapis/release-please-action@v5
+        id: release
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           config-file: config/release-please-config.json
@@ -33,6 +34,19 @@ jobs:
         with:
           node-version: "24"
           cache: npm
+
+      - name: Attach install assets to the new release
+        if: ${{ steps.release.outputs.release_created }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.release.outputs.tag_name }}
+        run: |
+          # Package from the tagged commit: its dist/ was built on the release
+          # PR, so the assets match the version exactly. No npm ci needed --
+          # packaging only uses Node built-ins, zip, and npx mcpb.
+          git checkout "$TAG"
+          npm run release:package
+          gh release upload "$TAG" release/*.zip release/*.mcpb --clobber
 
       - name: Rebuild dist on the release PR and dispatch CI
         env:

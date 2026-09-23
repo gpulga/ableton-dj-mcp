@@ -42,3 +42,6 @@ workspace/
 
 # Personal Live projects saved at the repo root (e2e fixtures live under e2e/)
 /*\ Project/
+
+# Release assets built by npm run release:package
+/release/

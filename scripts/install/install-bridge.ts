@@ -21,15 +21,13 @@ import {
   statSync,
 } from "node:fs";
 import { platform } from "node:os";
-import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
+import {
+  BRIDGE_EXCLUDED,
+  BRIDGE_SURFACE_NAME,
+  bridgeSourceDir as sourceDir,
+} from "../shared/device-files.ts";
 import { resolveRemoteScriptsDir } from "../shared/user-library-path.ts";
-
-const SURFACE_DIR_NAME = "AbletonDjMcp";
-
-const here = dirname(fileURLToPath(import.meta.url));
-const repoRoot = resolve(here, "../..");
-const sourceDir = join(repoRoot, "live_browser_bridge");
 
 if (!existsSync(sourceDir)) {
   console.error(`install-bridge failed: missing source dir ${sourceDir}`);
@@ -46,7 +44,7 @@ if (targetRoot === null) {
   process.exit(1);
 }
 
-const targetDir = join(targetRoot, SURFACE_DIR_NAME);
+const targetDir = join(targetRoot, BRIDGE_SURFACE_NAME);
 
 if (!existsSync(targetRoot)) {
   mkdirSync(targetRoot, { recursive: true });
@@ -60,10 +58,7 @@ if (existsSync(targetDir)) {
 
 mkdirSync(targetDir, { recursive: true });
 
-copyTree(sourceDir, targetDir, [
-  "tests", // unit tests don't belong inside Live's load path
-  "__pycache__",
-]);
+copyTree(sourceDir, targetDir, BRIDGE_EXCLUDED);
 
 console.log("");
 console.log(`Installed bridge to: ${targetDir}`);
