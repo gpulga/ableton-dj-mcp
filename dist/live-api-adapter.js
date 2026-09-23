@@ -693,6 +693,67 @@ Public License instead of this License.  But first, please read
 
 */
 
+function createLiveApiObjectCache(Api) {
+  const byId = new Map;
+  const missingByTarget = new Map;
+  let resolver;
+  let created = 0;
+  const construct = target => {
+    created++;
+    return new Api(target);
+  };
+  const resolveId = target => {
+    if (target.startsWith("id ")) {
+      return target.slice(3);
+    }
+    resolver ??= construct("live_set");
+    resolver.goto(target);
+    return String(resolver.id);
+  };
+  const getMissing = target => {
+    let missing = missingByTarget.get(target);
+    if (!missing) {
+      missing = construct(target);
+      missingByTarget.set(target, missing);
+    }
+    return missing;
+  };
+  return {
+    get(target) {
+      const id = resolveId(target);
+      if (id === "0") {
+        return getMissing(target);
+      }
+      const cached = byId.get(id);
+      if (cached) {
+        if (cached.path !== "") {
+          return cached;
+        }
+        byId.delete(id);
+      }
+      const fresh = construct(target);
+      if (fresh.path !== "") {
+        byId.set(id, fresh);
+      }
+      return fresh;
+    },
+    get created() {
+      return created;
+    }
+  };
+}
+
+let sharedCache;
+
+function liveApiObject(target) {
+  sharedCache ??= createLiveApiObjectCache(LiveAPI);
+  return sharedCache.get(target);
+}
+
+function uncachedLiveApiObject(target) {
+  return new LiveAPI(target);
+}
+
 function parseIdOrPath(idOrPath) {
   if (typeof idOrPath === "object" && !Array.isArray(idOrPath)) {
     return String(idOrPath);
@@ -714,7 +775,7 @@ function parseIdOrPath(idOrPath) {
 
 if (typeof LiveAPI !== "undefined") {
   LiveAPI.from = function(idOrPath) {
-    return new LiveAPI(parseIdOrPath(idOrPath));
+    return liveApiObject(parseIdOrPath(idOrPath));
   };
   LiveAPI.prototype.exists = function() {
     const id = this.id;
@@ -795,7 +856,7 @@ if (typeof LiveAPI !== "undefined") {
     return children;
   };
   LiveAPI.prototype.getChildren = function(name) {
-    return this.getChildIds(name).map(id => new LiveAPI(id));
+    return this.getChildIds(name).map(liveApiObject);
   };
   LiveAPI.prototype.getColor = function() {
     const colorValue = this.getProperty("color");
@@ -971,9 +1032,9 @@ if (!Array.prototype.with) {
 
 const BUILD_INFO = {
   branch: "release-please--branches--main--components--ableton-dj-mcp",
-  sha: "bd43019e",
+  sha: "db3b471d",
   dirty: false,
-  buildTime: "2026-09-23T21:14:18.232Z",
+  buildTime: "2026-09-23T22:49:07.990Z",
   source: "release"
 };
 
@@ -1104,7 +1165,7 @@ function hasPreReleaseSuffix(version) {
   return cleaned.includes("-");
 }
 
-const VERSION = "2.4.0";
+const VERSION = "2.4.1";
 
 const MIN_LIVE_VERSION = "12.3.0";
 
@@ -14806,7 +14867,7 @@ function rawLiveApi({path: path, operations: operations}, _context = {}) {
     throw new Error(`operations array cannot exceed ${MAX_OPERATIONS} operations`);
   }
   const defaultPath = "live_set";
-  const api = LiveAPI.from(path ?? defaultPath);
+  const api = uncachedLiveApiObject(parseIdOrPath(path ?? defaultPath));
   const results = [];
   for (const operation of operations) {
     let result;

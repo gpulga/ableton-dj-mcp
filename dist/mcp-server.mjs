@@ -743,8 +743,8 @@ import os from "node:os";
 
 const BUILD_INFO = {
   branch: "release-please--branches--main--components--ableton-dj-mcp",
-  sha: "bd43019e",
-  buildTime: "2026-09-23T21:14:18.232Z"
+  sha: "db3b471d",
+  buildTime: "2026-09-23T22:49:07.990Z"
 };
 
 function buildIdentifier() {
@@ -809,7 +809,7 @@ function hasPreReleaseSuffix(version) {
   return cleaned.includes("-");
 }
 
-const VERSION = "2.4.0";
+const VERSION = "2.4.1";
 
 var RequestError = class extends Error {
   constructor(message, options) {
