@@ -971,9 +971,9 @@ if (!Array.prototype.with) {
 
 const BUILD_INFO = {
   branch: "main",
-  sha: "745d4171",
+  sha: "6cebfdf9",
   dirty: false,
-  buildTime: "2026-08-08T23:14:21.499Z",
+  buildTime: "2026-09-23T20:07:48.070Z",
   source: "local"
 };
 
