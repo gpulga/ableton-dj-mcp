@@ -28,7 +28,7 @@ export function parseToolPayload(response: McpResponse): unknown {
  * @param response - MCP response
  * @returns Text of the payload item
  */
-export function extractText(response: McpResponse): string {
+function extractText(response: McpResponse): string {
   const item = response.content.at(-1);
 
   if (item?.type !== "text") {
