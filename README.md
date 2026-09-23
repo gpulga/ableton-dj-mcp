@@ -10,33 +10,80 @@
    ▁▂▃▄▅▆▇█▇▆▅▄▃▂▁▁▂▃▄▅▆▇█▇▆▅▄▃▂▁▁▂▃▄▅▆▇█▇▆▅▄▃▂▁▁▂▃▄▅▆▇█
 ```
 
-[![CI](https://github.com/gabrielpulga/ableton-dj-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/gabrielpulga/ableton-dj-mcp/actions/workflows/ci.yml)
+[![CI](https://github.com/gpulga/ableton-dj-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/gpulga/ableton-dj-mcp/actions/workflows/ci.yml)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](./LICENSE)
 
-MCP server for AI-assisted electronic music production in Ableton Live.
+**Let Claude (or any MCP-capable AI) control Ableton Live.**
 
-Specialized for **indie dance, tech house, melodic techno, and house music** —
-ships with built-in genre theory and production techniques so your AI gives
-grounded, specific advice instead of generic music theory.
+Ask in plain language, and the AI reads and edits your open Live set in real
+time: tracks, clips, MIDI notes, devices, scenes, automation, playback.
 
-## How it works
+> "Set tempo to 124, add a Drift bass on a new track, and write a rolling
+> 16th-note bassline in A minor for 8 bars."
+>
+> "Read my drum track and add ghost-note hi-hats with some velocity variation."
+>
+> "Duplicate scene 3, mute the kick for the first 4 bars, and automate the
+> filter opening across the break."
 
-The server runs inside a Max for Live device embedded in your Live set. A portal
-bridges your AI client (stdio) to the server over HTTP. Tools prefixed `adj-`
-let the AI read and manipulate the Live set in real time.
+It ships with electronic-music knowledge (house, tech house, melodic techno,
+indie dance and more), so genre and arrangement suggestions start from how those
+styles are actually built.
 
 ## Requirements
 
-- Ableton Live 12.3+ with Max for Live
-- Node.js 24+
-- An MCP-compatible AI client (Claude Desktop, Cursor, etc.)
+- **Ableton Live 12.3+** with **Max for Live** (Suite, or Standard + M4L)
+- **Node.js 24+** ([nodejs.org](https://nodejs.org))
+- **macOS or Windows**
+- An MCP client: [Claude Code](https://claude.com/claude-code), Claude Desktop,
+  Cursor, etc.
 
-## Setup and usage
+## Install (about 5 minutes)
 
-- [Setup](./docs/Setup.md) — install + connect your AI client (5 minutes)
-- [Tools Reference](./docs/Tools-Reference.md) — all 22 `adj-*` tools
-- [Releasing](./docs/Releasing.md) — release process + local deploy
-- [`docs/`](./docs/) — full developer docs
+```bash
+git clone https://github.com/gpulga/ableton-dj-mcp.git
+cd ableton-dj-mcp
+npm run setup
+```
+
+No `npm install` or build step is needed. `setup` installs the Live device and
+bridge, then prints the exact command to connect your AI client. Do the few
+clicks it lists inside Live, then ask your AI: **"connect to ableton"**.
+
+Full walkthrough and troubleshooting: **[docs/Setup.md](./docs/Setup.md)**.
+
+### Let your AI install it
+
+Open Claude Code (or another coding agent) in any folder and paste:
+
+```
+Install Ableton DJ MCP for me by following
+https://github.com/gpulga/ableton-dj-mcp/blob/main/docs/Setup.md
+```
+
+The agent runs the commands. You do the clicks inside Live that it asks for.
+
+## How it works
+
+```
+AI client ──stdio──▶ portal (Node) ──HTTP :3350──▶ Max for Live device ──▶ Live API
+                                                   Python bridge (UDP) ──▶ Browser / automation
+```
+
+A Max for Live device on a track in your set runs the MCP server. A small portal
+process connects your AI client to it. An optional Python remote script adds
+things Max can't reach, like the browser and clip automation. Details:
+[Architecture](./docs/contributing/Architecture.md).
+
+## Docs
+
+| You want to…                      | Read                                                             |
+| --------------------------------- | ---------------------------------------------------------------- |
+| Install and connect               | [Setup](./docs/Setup.md)                                         |
+| See what the AI can do (24 tools) | [Tools Reference](./docs/Tools-Reference.md)                     |
+| Write MIDI in the notation        | [Bar\|beat spec](./docs/specs/BarBeat-Spec.md)                   |
+| Hack on the code                  | [CLAUDE.md](./CLAUDE.md) → [docs index](./docs/PROJECT_INDEX.md) |
+| Report a bug / request a feature  | [Issues](https://github.com/gpulga/ableton-dj-mcp/issues)        |
 
 ## License
 

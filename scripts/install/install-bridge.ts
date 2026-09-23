@@ -23,12 +23,12 @@ import {
 import { platform } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { resolveRemoteScriptsDir } from "./shared/user-library-path.ts";
+import { resolveRemoteScriptsDir } from "../shared/user-library-path.ts";
 
 const SURFACE_DIR_NAME = "AbletonDjMcp";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const repoRoot = resolve(here, "..");
+const repoRoot = resolve(here, "../..");
 const sourceDir = join(repoRoot, "live_browser_bridge");
 
 if (!existsSync(sourceDir)) {

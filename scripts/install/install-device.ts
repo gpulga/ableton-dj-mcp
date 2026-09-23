@@ -15,10 +15,10 @@ import { copyFileSync, existsSync, mkdirSync } from "node:fs";
 import { platform } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { resolveUserLibraryDir } from "./shared/user-library-path.ts";
+import { resolveUserLibraryDir } from "../shared/user-library-path.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const repoRoot = resolve(here, "..");
+const repoRoot = resolve(here, "../..");
 const sourceDir = join(repoRoot, "max-for-live-device");
 const distDir = join(repoRoot, "dist");
 

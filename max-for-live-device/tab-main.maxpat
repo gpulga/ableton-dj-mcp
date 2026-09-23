@@ -94,7 +94,7 @@
 						363.0,
 						35.0
 					],
-					"text": ";\rmax launch_browser https://github.com/gabrielpulga/ableton-dj-mcp/releases"
+					"text": ";\rmax launch_browser https://github.com/gpulga/ableton-dj-mcp/releases"
 				}
 			},
 			{
@@ -399,7 +399,7 @@
 						240.0,
 						35.0
 					],
-					"text": ";\rmax launchbrowser https://github.com/gabrielpulga/ableton-dj-mcp/blob/main/docs/Tools-Reference.md"
+					"text": ";\rmax launchbrowser https://github.com/gpulga/ableton-dj-mcp/blob/main/docs/Tools-Reference.md"
 				}
 			},
 			{

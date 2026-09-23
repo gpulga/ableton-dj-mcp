@@ -3,6 +3,11 @@
 Pure index for the codebase. Each line points to a source-of-truth file. Use
 this to orient before any task; load the linked file when relevant.
 
+## Install and use
+
+- [Setup.md](Setup.md) — end-user install (`npm run setup`), client wiring,
+  AI-agent install checklist, troubleshooting
+
 ## Architecture and build
 
 - [contributing/Architecture.md](contributing/Architecture.md) — dataflow
@@ -51,21 +56,21 @@ Each tool has 3 layers:
 
 ## Key Directories
 
-| Dir                     | Purpose                                                    |
-| ----------------------- | ---------------------------------------------------------- |
-| `src/mcp-server/`       | MCP server creation, Express app, Max API adapter          |
-| `src/tools/`            | All tool definitions + implementations                     |
-| `src/live-api-adapter/` | Tool dispatch to Ableton Live API (runs in Max V8)         |
-| `src/portal/`           | Node CLI bridge (stdio to HTTP)                            |
-| `src/notation/`         | bar\|beat parser + transform expression evaluator          |
-| `src/skills/`           | Tool set definitions (basic / standard / electronic-music) |
-| `src/shared/`           | Version, pitch, errors, serialization, `livePath` builders |
-| `e2e/`                  | End-to-end tests against a live Ableton instance           |
-| `config/`               | Rollup, Vitest, ESLint, jscpd configs                      |
-| `scripts/`              | Dev utilities: `adj-client.ts`, loc counter, open-live-set |
-| `dist/`                 | Build output (git-ignored)                                 |
-| `max-for-live-device/`  | `.amxd` device + sibling JS bundles loaded by Max          |
-| `live_browser_bridge/`  | Python remote-script sidecar, exposes Live's Browser API   |
+| Dir                     | Purpose                                                       |
+| ----------------------- | ------------------------------------------------------------- |
+| `src/mcp-server/`       | MCP server creation, Express app, Max API adapter             |
+| `src/tools/`            | All tool definitions + implementations                        |
+| `src/live-api-adapter/` | Tool dispatch to Ableton Live API (runs in Max V8)            |
+| `src/portal/`           | Node CLI bridge (stdio to HTTP)                               |
+| `src/notation/`         | bar\|beat parser + transform expression evaluator             |
+| `src/skills/`           | Tool set definitions (basic / standard / electronic-music)    |
+| `src/shared/`           | Version, pitch, errors, serialization, `livePath` builders    |
+| `e2e/`                  | End-to-end tests against a live Ableton instance              |
+| `config/`               | Rollup, Vitest, ESLint, jscpd configs                         |
+| `scripts/`              | Dev utilities + `install/` (setup, device, bridge installers) |
+| `dist/`                 | Build output (git-ignored)                                    |
+| `max-for-live-device/`  | `.amxd` device + sibling JS bundles loaded by Max             |
+| `live_browser_bridge/`  | Python remote-script sidecar, exposes Live's Browser API      |
 
 ## Entry Points
 

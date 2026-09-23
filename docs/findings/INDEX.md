@@ -120,8 +120,9 @@ subdirs (see `HOW-TO-WRITE.md`).
   [package.json, package-lock.json] — eslint-plugin-unicorn>=66 needs
   eslint>=10.4, eslint-plugin-import caps at eslint^9; mutually exclusive
 - [install-device-file-list](dev/build/install-device-file-list.md)
-  [scripts/install-device.ts, max-for-live-device/**] — User Library install
-  needs all 7 files (.amxd + 2 JS + 4 .maxpat); missing .maxpat = blank UI
+  [scripts/install/install-device.ts, max-for-live-device/**] — User Library
+  install needs all 7 files (.amxd + 2 JS + 4 .maxpat); missing .maxpat = blank
+  UI
 - [prettier-ignore-path-cwd-relative](dev/build/prettier-ignore-path-cwd-relative.md)
   [.prettierignore, config/prettier.config.mjs, package.json] — --ignore-path
   resolves relative to the ignore file's dir, not cwd (unlike --config)
@@ -149,8 +150,9 @@ subdirs (see `HOW-TO-WRITE.md`).
 ## workflow
 
 - [browser-bridge-needs-live-restart](workflow/browser-bridge-needs-live-restart.md)
-  [live_browser_bridge/**, scripts/install-bridge.ts] — install:bridge alone
-  doesn't reload edited Python while Live is running; full Live restart required
+  [live_browser_bridge/**, scripts/install/install-bridge.ts] — install:bridge
+  alone doesn't reload edited Python while Live is running; full Live restart
+  required
 - [device-deploy-flow](workflow/device-deploy-flow.md) [max-for-live-device/**,
   dist/**, package.json] — build → copy bundles to max-for-live-device → restart
   Live to load new version

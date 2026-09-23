@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 const RELEASES_URL =
-  "https://api.github.com/repos/gabrielpulga/ableton-dj-mcp/releases/latest";
+  "https://api.github.com/repos/gpulga/ableton-dj-mcp/releases/latest";
 
 const TIMEOUT_MS = 5000;
 

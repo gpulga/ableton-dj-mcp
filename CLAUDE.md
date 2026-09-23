@@ -1,7 +1,20 @@
 # Ableton DJ MCP
 
-MCP server for AI-assisted electronic music production in Ableton Live. Licensed
-under GPL-3.0-or-later.
+MCP server that lets an AI read and control Ableton Live. Licensed under
+GPL-3.0-or-later.
+
+## Installing or using it (not developing)?
+
+If the user wants to **install** this or **make music** with it, stop reading
+here. Instead:
+
+- **Install**: follow
+  [`docs/Setup.md` → For AI agents](docs/Setup.md#for-ai-agents-installing-this-for-a-user).
+  It's `npm run setup`. Don't run `npm install` or `npm run build`.
+- **Make music**: call `adj-connect` first. It returns usage skills. Tool
+  catalog: [`docs/Tools-Reference.md`](docs/Tools-Reference.md).
+
+Everything below is for changing the code.
 
 ## Quick start
 
@@ -107,9 +120,8 @@ steps: [`docs/Releasing.md`](docs/Releasing.md).
 
 Every PR must include:
 
-- **Assignee**: `gabrielpulga` (project maintainer — every PR gets this assignee
-  for review, regardless of who opens it; not a placeholder for your own
-  username)
+- **Assignee**: `gpulga` (project maintainer — every PR gets this assignee for
+  review, regardless of who opens it; not a placeholder for your own username)
 - **Label**: one of the 5 standard labels (pick the best fit):
   - `bug` — fixes a defect
   - `feature` — new functionality
@@ -117,7 +129,7 @@ Every PR must include:
   - `deps` — dependency updates
   - `ci` — CI/CD and workflow changes
 
-`gh pr create` flags: `--assignee gabrielpulga --label <label>`
+`gh pr create` flags: `--assignee gpulga --label <label>`
 
 ## Commit style
 

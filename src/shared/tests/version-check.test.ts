@@ -128,7 +128,7 @@ describe("checkForUpdate", () => {
     await checkForUpdate("1.0.0");
 
     expect(fetchSpy).toHaveBeenCalledWith(
-      "https://api.github.com/repos/gabrielpulga/ableton-dj-mcp/releases/latest",
+      "https://api.github.com/repos/gpulga/ableton-dj-mcp/releases/latest",
       expect.objectContaining({ signal: expect.any(AbortSignal) }),
     );
   });

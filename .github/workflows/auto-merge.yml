@@ -20,7 +20,7 @@ jobs:
         run: |
           PR="${{ github.event.pull_request.html_url }}"
           # Assign owner
-          gh pr edit "$PR" --add-assignee gabrielpulga
+          gh pr edit "$PR" --add-assignee gpulga
           # Pick label based on branch name
           BRANCH="${{ github.head_ref }}"
           if [[ "$BRANCH" == dependabot/github_actions/* ]]; then

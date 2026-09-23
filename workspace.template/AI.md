@@ -42,20 +42,20 @@ all tools are available regardless of where you cd from.
 
 ## MCP tools available
 
-The Ableton DJ MCP server exposes 22 tools, all prefixed `adj-`. Quick reference
+The Ableton DJ MCP server exposes 24 tools, all prefixed `adj-`. Quick reference
 (full reference: `../docs/Tools-Reference.md`):
 
-| Domain     | Tools                                                       |
-| ---------- | ----------------------------------------------------------- |
-| Workflow   | `adj-connect`, `adj-context`, `adj-read-samples`            |
-| Live Set   | `adj-read-live-set`, `adj-update-live-set`                  |
-| Track      | `adj-read-track`, `adj-create-track`, `adj-update-track`    |
-| Scene      | `adj-read-scene`, `adj-create-scene`, `adj-update-scene`    |
-| Clip       | `adj-read-clip`, `adj-create-clip`, `adj-update-clip`       |
-| Device     | `adj-read-device`, `adj-create-device`, `adj-update-device` |
-| Operations | `adj-delete`, `adj-duplicate`                               |
-| Control    | `adj-select`, `adj-playback`                                |
-| Generative | `adj-generate` (Euclidean rhythms, no Live API)             |
+| Domain     | Tools                                                                                          |
+| ---------- | ---------------------------------------------------------------------------------------------- |
+| Workflow   | `adj-connect`, `adj-context`                                                                   |
+| Live Set   | `adj-read-live-set`, `adj-update-live-set`                                                     |
+| Track      | `adj-read-track`, `adj-create-track`, `adj-update-track`                                       |
+| Scene      | `adj-read-scene`, `adj-create-scene`, `adj-update-scene`                                       |
+| Clip       | `adj-read-clip`, `adj-create-clip`, `adj-update-clip`, `adj-microsection-mute`, `adj-automate` |
+| Device     | `adj-read-device`, `adj-create-device`, `adj-update-device`, `adj-browse`                      |
+| Operations | `adj-delete`, `adj-duplicate`                                                                  |
+| Control    | `adj-select`, `adj-playback`                                                                   |
+| Generative | `adj-generate` (Euclidean rhythms, no Live API)                                                |
 
 Always start a music session with `adj-connect` to verify the device is running
 and check the current Live Set state.
@@ -113,13 +113,13 @@ it or lose it.
 
 ### What to capture
 
-| Discovery type                                      | Where to capture                                         |
-| --------------------------------------------------- | -------------------------------------------------------- |
-| MCP tool bug, missing feature, or workflow friction | **File a GitHub issue** in `gabrielpulga/ableton-dj-mcp` |
-| Tool quirk that changes how you use the tool        | Skip — covered by `docs/findings/` in the repo           |
-| Music technique that worked in this session         | `workspace/findings/technique/<slug>.md`                 |
-| Genre-specific pattern from reference analysis      | `workspace/findings/genre/<slug>.md`                     |
-| Sound design recipe (pad, lead, bass, kick)         | `workspace/findings/sound-design/<slug>.md`              |
+| Discovery type                                      | Where to capture                                   |
+| --------------------------------------------------- | -------------------------------------------------- |
+| MCP tool bug, missing feature, or workflow friction | **File a GitHub issue** in `gpulga/ableton-dj-mcp` |
+| Tool quirk that changes how you use the tool        | Skip — covered by `docs/findings/` in the repo     |
+| Music technique that worked in this session         | `workspace/findings/technique/<slug>.md`           |
+| Genre-specific pattern from reference analysis      | `workspace/findings/genre/<slug>.md`               |
+| Sound design recipe (pad, lead, bass, kick)         | `workspace/findings/sound-design/<slug>.md`        |
 
 ### When to capture
 

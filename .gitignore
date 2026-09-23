@@ -64,3 +64,6 @@ local/
 # Entirely private — projects, findings, genres, techniques, AI instructions
 # never leave the user's machine.
 workspace/
+
+# Personal Live projects saved at the repo root (e2e fixtures live under e2e/)
+/*\ Project/
