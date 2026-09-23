@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.4.1](https://github.com/gpulga/ableton-dj-mcp/compare/ableton-dj-mcp-v2.4.0...ableton-dj-mcp-v2.4.1) (2026-09-23)
+
+
+### Performance Improvements
+
+* poll the bridge socket on Live's main tick and target URI lookups ([#328](https://github.com/gpulga/ableton-dj-mcp/issues/328)) ([7bf0c76](https://github.com/gpulga/ableton-dj-mcp/commit/7bf0c763736b02911f80281c363df26d6030cabc))
+* reuse LiveAPI objects instead of creating one per lookup ([#327](https://github.com/gpulga/ableton-dj-mcp/issues/327)) ([bdb2dd0](https://github.com/gpulga/ableton-dj-mcp/commit/bdb2dd03bdf1958f80998bc0febced056d30ac89))
+
 ## [2.4.0](https://github.com/gpulga/ableton-dj-mcp/compare/ableton-dj-mcp-v2.3.0...ableton-dj-mcp-v2.4.0) (2026-09-23)
 
 
