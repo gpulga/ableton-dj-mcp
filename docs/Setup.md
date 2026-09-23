@@ -1,168 +1,76 @@
 # Setup
 
-Install and run Ableton DJ MCP.
+Get from zero to "AI controls my Live set" in about 5 minutes.
+
+**Contents:** [Requirements](#requirements) · [Install](#1-install) ·
+[Finish in Live](#2-finish-in-live) ·
+[Connect your AI](#3-connect-your-ai-client) · [Verify](#4-verify) ·
+[For AI agents](#for-ai-agents-installing-this-for-a-user) · [Update](#update) ·
+[Uninstall](#uninstall) · [Optional extras](#optional-extras) ·
+[Troubleshooting](#troubleshooting)
 
 ## Requirements
 
-See [Requirements](../README.md#requirements) in the README.
+- Ableton Live 12.3+ with Max for Live
+- Node.js 24+ (`node -v` to check; get it from [nodejs.org](https://nodejs.org))
+- macOS or Windows
+- An MCP client (Claude Code, Claude Desktop, Cursor, …)
 
-## Install
+## 1. Install
 
 ```bash
-git clone https://github.com/gabrielpulga/ableton-dj-mcp.git
+git clone https://github.com/gpulga/ableton-dj-mcp.git
 cd ableton-dj-mcp
-npm install
-npm run build
+npm run setup
 ```
 
-## Install the device in Ableton's User Library
+No `npm install` or build is needed. The built files are committed, and the
+setup scripts only use Node built-ins. `npm run setup`:
 
-```bash
-npm run install:device
-```
+1. Copies the Max for Live device to your User Library:
+   - macOS: `~/Music/Ableton/User Library/Presets/MIDI Effects/Max MIDI Effect/`
+   - Windows:
+     `%USERPROFILE%\Documents\Ableton\User Library\Presets\MIDI Effects\Max MIDI Effect\`
+2. Copies the Python bridge (needed for browsing/loading presets and clip
+   automation) to `User Library/Remote Scripts/AbletonDjMcp/`
+3. Prints the connect command for your AI client, with this clone's absolute
+   path filled in
 
-Copies the device + bundled JS into your User Library so it shows up in Live's
-browser permanently. Cross-platform (macOS + Windows). Idempotent — re-run after
-every `npm run build` to refresh.
+Re-running it is safe, because it overwrites the previous install.
 
-The script writes to (these paths are real after running it — Live's browser
-mirrors them 1:1):
+## 2. Finish in Live
 
-- macOS: `~/Music/Ableton/User Library/Presets/MIDI Effects/Max MIDI Effect/`
-- Windows:
-  `%USERPROFILE%\Documents\Ableton\User Library\Presets\MIDI Effects\Max MIDI Effect\`
+These steps happen in Live's UI, so no script can do them:
 
-After running:
-
-1. Open Ableton Live (or refresh the User Library in the browser — right-click
-   User Library → Refresh if the device doesn't appear).
-2. In the browser, look under **Places → User Library → Presets → MIDI Effects →
-   Max MIDI Effect → Ableton_DJ_MCP**. Live 12 also surfaces it under
-   **Categories → Max for Live → Max MIDI Effect**. (Folder names follow
-   filesystem layout; localized Live builds translate the Live-side labels but
-   the User Library folder structure is the same.)
-3. Drag onto any MIDI track. The status panel should show
+1. **Restart Live** so it picks up the new files.
+2. **Settings (Preferences) → Link, Tempo & MIDI → Control Surface** → choose
+   **AbletonDjMcp** in an empty slot. Input/Output can stay "None".
+3. **Load the device.** Browser → Max for Live → Max MIDI Effect → drag
+   **Ableton_DJ_MCP** onto a track. A return or master track is best, since it
+   won't be deleted by accident. Wait for the device to show
    `MCP server running on :3350`.
+4. **Recommended: File → Save Live Set as Default Set.** Every new set then
+   includes the device, so you never drag it in again.
 
-Sanity check from a terminal — files should match what's in the User Library
-folder on disk:
+## 3. Connect your AI client
 
-```bash
-ls "$HOME/Music/Ableton/User Library/Presets/MIDI Effects/Max MIDI Effect/"
-# Ableton_DJ_MCP.amxd  live-api-adapter.js  mcp-server.mjs
-# server-status.maxpat tab-context.maxpat   tab-main.maxpat  tab-setup.maxpat
-```
+Use the command `npm run setup` printed. It has your real path. The general
+form:
 
-### Manual install (alternative)
-
-If you'd rather skip the script, drag `max-for-live-device/Ableton_DJ_MCP.amxd`
-onto any MIDI track from your file manager. The device only persists in that one
-Live set — for permanent install, use `npm run install:device`.
-
-## Make the device load on every Live launch
-
-**Strongly recommended.** Without this step, every new Live set is empty — the
-device isn't loaded, and `:3350` is down until you drag the device in.
-Self-bootstrap (next section) depends on this.
-
-One-time setup:
-
-1. Open a Live set and drop the device onto a **return or master track** (return
-   tracks survive switching between Session and Arrangement views; regular
-   tracks can be deleted accidentally).
-2. Wait until the device's status panel reads `MCP server running on :3350`.
-3. **File → Save Live Set as Default Set**. Live confirms the new default.
-
-Every fresh Live set now auto-loads the device. `adj-connect` works without any
-drag-and-drop.
-
-### How to verify
-
-Quit Live entirely. Reopen it. The device should appear on your default track
-and the status panel should immediately show `MCP server running on :3350`.
-Confirm with:
+**Claude Code**
 
 ```bash
-curl -s -o /dev/null -w "%{http_code}\n" http://localhost:3350/mcp
+claude mcp add ableton-dj-mcp -- node "/absolute/path/to/ableton-dj-mcp/dist/ableton-dj-mcp-portal.js"
 ```
 
-A non-zero HTTP status means the device is up.
+Start a new Claude Code session afterwards. `/mcp` should list `ableton-dj-mcp`
+as connected.
 
-## Launch Live from the terminal
+**Claude Desktop**: add this to `claude_desktop_config.json`, then restart the
+app:
 
-```bash
-npm run start:live                 # launch Live (whatever the OS opens by default)
-npm run start:live -- path.als     # launch Live with a specific .als file
-npm run start:live -- --template   # launch Live with the bundled template.als
-```
-
-The `--template` flag opens a bundled `template.als` (a Live set with the device
-pre-loaded on a return track). The template ships separately from this PR — if
-the file doesn't exist yet, the script errors clearly.
-
-This is the foundation for self-bootstrap: an MCP-aware AI client can call
-`start:live` to bring up Live in the right state without the human having to
-drag anything.
-
-## Self-bootstrap (opt-in)
-
-Set `ADJ_AUTO_BOOT=true` in your MCP client config to let the portal launch Live
-automatically when it can't reach `:3350`. macOS only for now.
-
-> **Prerequisite:** the device must auto-load on every Live launch. See
-> [Make the device load on every Live launch](#make-the-device-load-on-every-live-launch)
-> above. Without it, the portal will open Live but the device won't load, and
-> your tool call will still fail.
-
-Behavior:
-
-- **Live closed** → portal launches Live (`open -b com.ableton.live`), polls
-  `:3350` for up to 30 seconds, then forwards your tool call.
-- **Live open with device** → noop, business as usual.
-- **Live open without device** → portal does **not** auto-relaunch (would
-  destroy unsaved work). Returns the standard setup error.
-- **Single attempt per portal lifetime** — if boot fails, subsequent calls
-  return the standard error.
-
-### Claude Code
-
-```bash
-claude mcp add ableton-dj-mcp \
-  -e ADJ_AUTO_BOOT=true \
-  -- node /absolute/path/to/ableton-dj-mcp/dist/ableton-dj-mcp-portal.js
-```
-
-If you already added the server, remove it first
-(`claude mcp remove ableton-dj-mcp`) and re-add with the `-e` flag.
-
-### Claude Desktop
-
-```json
-{
-  "mcpServers": {
-    "ableton-dj-mcp": {
-      "command": "node",
-      "args": ["/absolute/path/to/dist/ableton-dj-mcp-portal.js"],
-      "env": { "ADJ_AUTO_BOOT": "true" }
-    }
-  }
-}
-```
-
-## Wire up your AI client
-
-### Claude Code
-
-```bash
-claude mcp add ableton-dj-mcp -- node /absolute/path/to/ableton-dj-mcp/dist/ableton-dj-mcp-portal.js
-```
-
-Restart Claude Code. Verify with `/mcp` — should show
-`ableton-dj-mcp ✓ Connected`.
-
-### Claude Desktop
-
-Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
+- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
 
 ```json
 {
@@ -175,65 +83,116 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
 }
 ```
 
-Restart Claude Desktop.
+**Other MCP clients**: stdio command
+`node /absolute/path/to/ableton-dj-mcp/dist/ableton-dj-mcp-portal.js`, or HTTP
+at `http://localhost:3350/mcp`.
 
-### Other MCP clients
+## 4. Verify
 
-Point the client at `node /absolute/path/to/dist/ableton-dj-mcp-portal.js`
-(stdio transport) or `http://localhost:3350/mcp` (HTTP).
-
-## Verify
-
-In your MCP client:
+With Live open and the device loaded, ask your AI:
 
 ```
-Use adj-connect
+connect to ableton
 ```
 
-Expected response:
+It calls `adj-connect` and should report `connected: true` with your Live
+version. Try something small next: _"what tracks are in my set?"_
 
+From a terminal,
+`curl -s -o /dev/null -w "%{http_code}\n" http://localhost:3350/mcp` prints a
+non-zero status when the device is up.
+
+## For AI agents installing this for a user
+
+Run steps 1 and 3 yourself, and walk the user through step 2. Checklist:
+
+1. **Preflight.** `node -v` must be ≥ 24. If it isn't, stop and tell the user to
+   install Node 24+. Confirm Ableton Live 12.3+ with Max for Live is installed.
+   Ask the user if you can't tell. The OS must be macOS or Windows.
+2. **Install.** Clone to a stable location, such as `~/ableton-dj-mcp`. Don't
+   use a temp dir, because the MCP config points at this path. Then run
+   `npm run setup` inside it. Don't run `npm install`, since it isn't needed.
+3. **Register.** Run the exact `claude mcp add …` line that setup printed. For
+   other clients, write the printed JSON into their config. Don't overwrite
+   other servers already in the file.
+4. **Hand off the Live steps.** Relay [step 2](#2-finish-in-live) to the user in
+   plain words and wait for them to confirm the device shows
+   `MCP server running on :3350`.
+5. **Verify.** MCP tools load when a session starts. Tell the user to start a
+   new AI session, and in it call `adj-connect`. For a quick check before that,
+   run the `curl` in [Verify](#4-verify).
+6. Report back: install path, what was registered, and anything the user still
+   has to do.
+
+When operating Live, always call `adj-connect` first. It returns the skills and
+conventions for using the other tools. Full catalog:
+[Tools-Reference.md](Tools-Reference.md).
+
+## Update
+
+```bash
+cd ableton-dj-mcp
+git pull
+npm run setup
 ```
-connected: true
-serverVersion: <current version>
-abletonLiveVersion: 12.3.x
+
+Then remove and re-add the device in Live, or restart Live.
+
+## Uninstall
+
+1. `claude mcp remove ableton-dj-mcp`, or delete the entry from your client
+   config.
+2. Delete from your User Library: `Presets/MIDI Effects/Max MIDI Effect/` (the
+   `Ableton_DJ_MCP.amxd`, `*.maxpat`, `live-api-adapter.js`, `mcp-server.mjs`
+   files) and `Remote Scripts/AbletonDjMcp/`.
+3. Delete the cloned folder.
+
+## Optional extras
+
+### Auto-launch Live (macOS)
+
+Add `ADJ_AUTO_BOOT=true` to the server's environment. When the AI calls a tool
+and `:3350` is down, the portal opens Live and waits up to 30s. This requires
+the default set to include the device ([step 2.4](#2-finish-in-live)). It never
+relaunches a Live that's already open.
+
+```bash
+claude mcp add ableton-dj-mcp -e ADJ_AUTO_BOOT=true -- node "/absolute/path/to/dist/ableton-dj-mcp-portal.js"
 ```
 
-If you see this, you're done.
+For Claude Desktop, add `"env": { "ADJ_AUTO_BOOT": "true" }` to the server
+entry.
 
-## Set up your music workspace
+### Launch Live from the terminal
 
-Optional but recommended. Creates a personal, gitignored `workspace/` for your
-projects, genres, techniques, and AI instructions.
+```bash
+npm run start:live               # open Live
+npm run start:live -- path.als   # open a specific set
+```
+
+### Music workspace
 
 ```bash
 npm run init:workspace
 ```
 
-Result:
-
-```
-workspace/
-├── AI.md                # provider-agnostic instructions for your AI client
-├── projects/
-│   └── example-track/   # sample to copy or replace
-├── genres/
-└── techniques/
-```
-
-For music sessions, start your AI client from inside `workspace/` so it loads
-music-first context (not dev/code context). The `adj-*` tools are registered
-globally and work the same regardless of cwd.
-
-Edit `workspace/AI.md` to add your own production preferences, reference
-artists, and style rules. The file is read by your AI on every session.
+This creates a private, gitignored `workspace/` for project notes, genre notes
+and your own AI instructions (`workspace/AI.md`). Start your AI client from
+inside `workspace/` for music sessions, so it loads music context instead of
+developer context.
 
 ## Troubleshooting
 
-| Symptom                                         | Fix                                                                                                                         |
-| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| Device console silent                           | Reload device: eject + reinsert on track, or restart Live                                                                   |
-| Tool list empty in client                       | Restart MCP client after `claude mcp add`                                                                                   |
-| `connection refused :3350`                      | Device not loaded in Live — check the MIDI track                                                                            |
-| Lazy-boot launches Live but `:3350` never opens | Default Live set has no device. See [Make the device load on every Live launch](#make-the-device-load-on-every-live-launch) |
-| `bpatcher: error loading patcher tab-*.maxpat`  | User Library install is missing the `.maxpat` files. Re-run `npm run install:device` (fixed in #110)                        |
-| Wrong version in console                        | Stale bundle. See [Releasing.md](Releasing.md)                                                                              |
+| Symptom                                           | Fix                                                                                       |
+| ------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `connection refused :3350` / "device not running" | Device isn't loaded in the open set. Drag it onto a track ([step 2.3](#2-finish-in-live)) |
+| AI doesn't see any `adj-*` tools                  | Start a new AI session / restart the client after adding the server                       |
+| Device not in Live's browser                      | Restart Live, or right-click User Library → Refresh. Re-run `npm run setup`               |
+| `bpatcher: error loading patcher tab-*.maxpat`    | Incomplete install. Re-run `npm run setup`                                                |
+| `adj-browse` / preset loading / automation errors | Bridge not enabled. Do [step 2.2](#2-finish-in-live), then restart Live                   |
+| Auto-launch opens Live but `:3350` never comes up | Default set lacks the device. Do [step 2.4](#2-finish-in-live)                            |
+| `setup: Node 24+ required`                        | Install Node 24+ from nodejs.org                                                          |
+| Wrong version shown in device console             | Stale install. `git pull && npm run setup`, then reload the device                        |
+
+Still stuck? [Open an issue](https://github.com/gpulga/ableton-dj-mcp/issues)
+with your OS, Live version, and the device console output.
