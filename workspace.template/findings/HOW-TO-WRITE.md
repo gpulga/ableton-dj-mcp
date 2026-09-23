@@ -15,7 +15,7 @@ own work.
 ## What does NOT go here
 
 - Tool bugs or feature requests → file as a GitHub issue in
-  `gabrielpulga/ableton-dj-mcp` instead
+  `gpulga/ableton-dj-mcp` instead
 - Generic music theory available anywhere on the web
 - Things from a tutorial or article (unless you tested them yourself and it
   worked)
@@ -144,7 +144,7 @@ base faster than good ones grow it.
 
 | Discovery type                             | Where to capture                                   |
 | ------------------------------------------ | -------------------------------------------------- |
-| MCP tool bug or missing feature            | GitHub issue in `gabrielpulga/ableton-dj-mcp`      |
+| MCP tool bug or missing feature            | GitHub issue in `gpulga/ableton-dj-mcp`            |
 | MCP tool quirk that affects how you use it | `docs/findings/dev/` (in tool repo, public)        |
 | Music technique that worked                | `workspace/findings/technique/` (here, private)    |
 | Genre-specific pattern from analysis       | `workspace/findings/genre/` (here, private)        |

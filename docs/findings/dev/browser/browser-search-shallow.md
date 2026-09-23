@@ -16,16 +16,16 @@ browser) are not reachable via standard category attributes.
 ## Evidence
 
 ```
-adj-browse search=lunatica           → returns only the categories list
-adj-browse category=user_library search=lunatica → items: []
-adj-browse category=samples search=lunatica → items: []
+adj-browse search=<pack-name>           → returns only the categories list
+adj-browse category=user_library search=<pack-name> → items: []
+adj-browse category=samples search=<pack-name> → items: []
 adj-browse category=packs            → only "Core Library"
 adj-browse category=user_folders     → items: []
 ```
 
-The Zenhiser pack lived at `~/Downloads/Zenhiser - Headliner Lunatica/` and was
-not reachable via any category. Plain `.wav` files load fine via
-`adj-create-clip sampleFile=<absolute path>`, no bridge needed.
+A third-party sample pack in a folder outside the User Library (e.g.
+`~/Downloads/<pack>/`) was not reachable via any category. Plain `.wav` files
+load fine via `adj-create-clip sampleFile=<absolute path>`, no bridge needed.
 
 ## Apply when
 
