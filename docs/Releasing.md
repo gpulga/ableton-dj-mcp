@@ -38,12 +38,13 @@ To add a new file with a hardcoded version:
 
 ## Deploying a new version locally
 
-`dist/` is kept up to date automatically: a CI workflow
-([`rebuild-dist.yml`](../.github/workflows/rebuild-dist.yml)) rebuilds and
-commits it on every push to `main` that touches `src/`, `package.json`,
-`package-lock.json`, or the rollup config. `npm run install:device` reads the
-built JS bundles directly from `dist/` (and the static `.amxd`/`.maxpat` assets
-from `max-for-live-device/`) — there's no manual copy step between them anymore.
+`dist/` is rebuilt once per release, not on every merge. The release workflow
+([`release.yml`](../.github/workflows/release.yml)) runs
+`RELEASE_BUILD=true npm run build` on the open release-please PR branch and
+commits `dist/` there, so it lands on `main` together with the version bump.
+Between releases, `dist/` on `main` is the last released build.
+`npm run install:device` reads the built JS bundles directly from `dist/` (and
+the static `.amxd`/`.maxpat` assets from `max-for-live-device/`).
 
 After a release lands on `main`:
 
@@ -52,8 +53,8 @@ git checkout main && git pull
 npm run install:device   # refresh the copy in your Live User Library
 ```
 
-If you're testing local changes that haven't been pushed to `main` yet (and
-therefore haven't gone through the auto-rebuild), run `npm run build` first.
+To run unreleased code from `main` or a local branch, run `npm run build` first.
+Don't commit the resulting `dist/` changes — the release PR owns them.
 
 Then in Ableton Live:
 
