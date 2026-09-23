@@ -47,8 +47,11 @@ These steps happen in Live's UI, so no script can do them:
    **AbletonDjMcp** in an empty slot. Input/Output can stay "None".
 3. **Load the device.** Browser → Max for Live → Max MIDI Effect → drag
    **Ableton_DJ_MCP** onto a track. A return or master track is best, since it
-   won't be deleted by accident. Wait for the device to show
-   `MCP server running on :3350`.
+   won't be deleted by accident. Wait for the Main tab to show a green **Ready
+   to build**. The Setup tab shows the server **Running** on port 3350:
+
+   <img src="images/device-setup.png" alt="Ableton DJ MCP device, Setup tab: server Running on port 3350" width="380">
+
 4. **Recommended: File → Save Live Set as Default Set.** Every new set then
    includes the device, so you never drag it in again.
 
@@ -102,6 +105,12 @@ From a terminal,
 `curl -s -o /dev/null -w "%{http_code}\n" http://localhost:3350/mcp` prints a
 non-zero status when the device is up.
 
+If it doesn't connect, check the device and the Max console (Live's Max window).
+A healthy start looks like this: **Ready to build** on the device, and
+`starting MCP server on port 3350` / `running` in the log.
+
+![The device on a track showing Ready to build, next to the Max console log confirming the MCP server started on port 3350](images/device-console.png)
+
 ## For AI agents installing this for a user
 
 Run steps 1 and 3 yourself, and walk the user through step 2. Checklist:
@@ -116,8 +125,8 @@ Run steps 1 and 3 yourself, and walk the user through step 2. Checklist:
    other clients, write the printed JSON into their config. Don't overwrite
    other servers already in the file.
 4. **Hand off the Live steps.** Relay [step 2](#2-finish-in-live) to the user in
-   plain words and wait for them to confirm the device shows
-   `MCP server running on :3350`.
+   plain words and wait for them to confirm the device's Main tab shows a green
+   **Ready to build**.
 5. **Verify.** MCP tools load when a session starts. Tell the user to start a
    new AI session, and in it call `adj-connect`. For a quick check before that,
    run the `curl` in [Verify](#4-verify).
