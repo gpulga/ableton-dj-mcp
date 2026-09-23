@@ -75,9 +75,6 @@ at `:3350/mcp`. Positions use bar|beat notation. Full schemas are in the
 
 **Op:** R read · W write · C create · D delete · X execute.
 
-`adj-automate`, `adj-browse` and URI loads in `adj-create-device` go through the
-Python remote script (UDP `:11077`), which `npm run setup` installs.
-
 ## Requirements
 
 - **Ableton Live 12.3+** with **Max for Live** (Suite, or Standard + M4L)
