@@ -743,8 +743,8 @@ import os from "node:os";
 
 const BUILD_INFO = {
   branch: "main",
-  sha: "745d4171",
-  buildTime: "2026-08-08T23:14:21.499Z"
+  sha: "b6809563",
+  buildTime: "2026-09-23T20:24:08.116Z"
 };
 
 function buildIdentifier() {
@@ -753,7 +753,7 @@ function buildIdentifier() {
   return `[${i.branch}@${i.sha}${dirtyMark}] built ${i.buildTime}`;
 }
 
-const RELEASES_URL = "https://api.github.com/repos/gabrielpulga/ableton-dj-mcp/releases/latest";
+const RELEASES_URL = "https://api.github.com/repos/gpulga/ableton-dj-mcp/releases/latest";
 
 const TIMEOUT_MS = 5e3;
 
