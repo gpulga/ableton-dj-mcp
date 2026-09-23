@@ -1,33 +1,23 @@
+# OS / editor
 .DS_Store
-.env
+Icon?
 .claude
 .vscode
 .serena
 *.bak
+scratchpad
+
+# Secrets
+.env
+
+# Dependencies and coverage
 node_modules
-knowledge-base
 coverage
-claude-desktop-extension/*.mcpb
-claude-desktop-extension/*.js
-claude-desktop-extension/LICENSE
-claude-desktop-extension/licenses
-claude-desktop-extension/manifest.json
-npm/*.js
-npm/*.svg
-npm/*.tgz
-npm/LICENSE
-npm/licenses
+
+# Built bundles copied into the device folder for local dev (dist/ is the tracked copy)
 max-for-live-device/*.js
 max-for-live-device/*.mjs
 max-for-live-device/.amxd_devpath
-*.afdesign~lock~
-release
-scratchpad
-.env
-
-# Generated JS from TypeScript in portal
-src/portal/*.js
-src/portal/*.js.map
 
 # Generated JS from Peggy grammars
 src/notation/*/parser/generated-*-parser.js
@@ -39,23 +29,8 @@ src/generated/
 __pycache__/
 *.pyc
 
-# Generated docs artifacts
-docs/_generated
-docs/public/markdown
-
-# VitePress Documentation Site
-docs/.vitepress/dist
-docs/.vitepress/cache
-
-# Eval results (generated JSON)
-evals/results
-
-# Playwright Test Results
-test-results
-report/
-
 # Live project backups
-**/live-sets/**/Backup
+**/Backup/
 
 # Personal/local-only files (notes, scratch tests, machine-specific configs)
 local/

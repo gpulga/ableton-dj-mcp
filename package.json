@@ -1,7 +1,7 @@
 {
   "name": "ableton-dj-mcp",
   "version": "2.3.0",
-  "description": "MCP server for AI-assisted electronic music production in Ableton Live",
+  "description": "MCP server that lets Claude or any AI read and control Ableton Live",
   "homepage": "https://github.com/gpulga/ableton-dj-mcp",
   "repository": {
     "type": "git",
@@ -17,18 +17,18 @@
     "node": ">=24"
   },
   "keywords": [
-    "music",
-    "ai",
     "mcp",
+    "model-context-protocol",
     "ableton",
-    "electronic-music",
-    "music-production",
     "ableton-live",
     "max-for-live",
-    "indie-dance",
-    "techno",
-    "house-music",
-    "music-theory"
+    "claude",
+    "ai",
+    "llm",
+    "music",
+    "music-production",
+    "electronic-music",
+    "midi"
   ],
   "scripts": {
     "dev": "npm run parser:build && npm run build-info && rollup -c config/rollup.config.mjs -w",
@@ -93,7 +93,6 @@
     "chokidar": "^5.0.0",
     "chokidar-cli": "^3.0.0",
     "eslint": "^9.39.5",
-    "eslint-import-resolver-alias": "^1.1.2",
     "eslint-import-resolver-node": "^0.4.0",
     "eslint-import-resolver-typescript": "^4.4.5",
     "eslint-plugin-import": "^2.32.0",
@@ -104,7 +103,6 @@
     "peggy": "^5.1.0",
     "prettier": "^3.9.6",
     "rollup": "^4.62.4",
-    "rollup-plugin-copy": "^3.5.0",
     "rollup-plugin-esbuild": "^6.2.1",
     "typescript": "^6.0.3",
     "vitest": "^4.1.10"
