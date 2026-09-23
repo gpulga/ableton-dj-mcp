@@ -29726,7 +29726,7 @@ const EMPTY_COMPLETION_RESULT = {
   }
 };
 
-const VERSION = "2.3.0";
+const VERSION = "2.4.0";
 
 function filterSchemaForSmallModel(schema, excludeParams, descriptionOverrides, excludeEnumValues) {
   const hasExclusions = excludeParams && excludeParams.length > 0;

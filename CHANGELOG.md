@@ -1,5 +1,26 @@
 # Changelog
 
+## [2.4.0](https://github.com/gpulga/ableton-dj-mcp/compare/ableton-dj-mcp-v2.3.0...ableton-dj-mcp-v2.4.0) (2026-09-23)
+
+
+### Features
+
+* attach install zip and Claude Desktop extension to releases ([#318](https://github.com/gpulga/ableton-dj-mcp/issues/318)) ([618a10e](https://github.com/gpulga/ableton-dj-mcp/commit/618a10e948de12fcf90dfcbe068d1164ed0b5f56))
+
+
+### Dependencies
+
+* bump @types/node from 26.1.2 to 26.2.0 ([#301](https://github.com/gpulga/ableton-dj-mcp/issues/301)) ([17eca4c](https://github.com/gpulga/ableton-dj-mcp/commit/17eca4cce50f97a25da5aaa5a893e8df249274ed))
+* bump @typescript-eslint/eslint-plugin from 8.66.0 to 8.67.0 ([#303](https://github.com/gpulga/ableton-dj-mcp/issues/303)) ([ce1b4bf](https://github.com/gpulga/ableton-dj-mcp/commit/ce1b4bfab3fe0b767cdc6d9e64b3f2e8a777ba7d))
+* bump @typescript-eslint/parser from 8.66.0 to 8.67.0 ([#302](https://github.com/gpulga/ableton-dj-mcp/issues/302)) ([40ea3d0](https://github.com/gpulga/ableton-dj-mcp/commit/40ea3d0203fe1c066a7b24185ad2b0897edcc404))
+* bump @vitest/coverage-v8 from 4.1.10 to 4.1.11 ([#308](https://github.com/gpulga/ableton-dj-mcp/issues/308)) ([dc3a140](https://github.com/gpulga/ableton-dj-mcp/commit/dc3a1403cc631cc4722ac8f8ff9004572f8c2c02))
+* bump @vitest/eslint-plugin from 1.6.26 to 1.6.27 ([#300](https://github.com/gpulga/ableton-dj-mcp/issues/300)) ([c7498bc](https://github.com/gpulga/ableton-dj-mcp/commit/c7498bc52cab9070603360b201c7dd2ed0bcbf70))
+* bump eslint-plugin-jsdoc from 63.3.3 to 64.2.1 ([#309](https://github.com/gpulga/ableton-dj-mcp/issues/309)) ([839b189](https://github.com/gpulga/ableton-dj-mcp/commit/839b1898a31c927703967915300df607f60b9d22))
+* bump jscpd from 5.0.14 to 5.0.15 ([#304](https://github.com/gpulga/ableton-dj-mcp/issues/304)) ([a7fd613](https://github.com/gpulga/ableton-dj-mcp/commit/a7fd61346b6f509e9423b5cb4789feb5d228e997))
+* bump jscpd from 5.0.15 to 5.3.0 ([#305](https://github.com/gpulga/ableton-dj-mcp/issues/305)) ([5612181](https://github.com/gpulga/ableton-dj-mcp/commit/5612181832d02c593b225105b40bdfc77504cf53))
+* bump rollup from 4.62.4 to 4.63.4 ([#306](https://github.com/gpulga/ableton-dj-mcp/issues/306)) ([0a8f86b](https://github.com/gpulga/ableton-dj-mcp/commit/0a8f86b5f0af969a88c48ed78c0e0654054644df))
+* bump vitest from 4.1.10 to 4.1.11 ([#307](https://github.com/gpulga/ableton-dj-mcp/issues/307)) ([0b52cc1](https://github.com/gpulga/ableton-dj-mcp/commit/0b52cc1c9ecce15f25e79138f177ba05470f4d0b))
+
 ## [2.3.0](https://github.com/gabrielpulga/ableton-dj-mcp/compare/ableton-dj-mcp-v2.2.0...ableton-dj-mcp-v2.3.0) (2026-08-08)
 
 

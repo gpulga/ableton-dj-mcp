@@ -742,9 +742,9 @@ import { createSocket } from "node:dgram";
 import os from "node:os";
 
 const BUILD_INFO = {
-  branch: "main",
-  sha: "745d4171",
-  buildTime: "2026-08-08T23:14:21.499Z"
+  branch: "release-please--branches--main--components--ableton-dj-mcp",
+  sha: "bd43019e",
+  buildTime: "2026-09-23T21:14:18.232Z"
 };
 
 function buildIdentifier() {
@@ -753,7 +753,7 @@ function buildIdentifier() {
   return `[${i.branch}@${i.sha}${dirtyMark}] built ${i.buildTime}`;
 }
 
-const RELEASES_URL = "https://api.github.com/repos/gabrielpulga/ableton-dj-mcp/releases/latest";
+const RELEASES_URL = "https://api.github.com/repos/gpulga/ableton-dj-mcp/releases/latest";
 
 const TIMEOUT_MS = 5e3;
 
@@ -809,7 +809,7 @@ function hasPreReleaseSuffix(version) {
   return cleaned.includes("-");
 }
 
-const VERSION = "2.3.0";
+const VERSION = "2.4.0";
 
 var RequestError = class extends Error {
   constructor(message, options) {

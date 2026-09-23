@@ -970,11 +970,11 @@ if (!Array.prototype.with) {
 }
 
 const BUILD_INFO = {
-  branch: "main",
-  sha: "745d4171",
+  branch: "release-please--branches--main--components--ableton-dj-mcp",
+  sha: "bd43019e",
   dirty: false,
-  buildTime: "2026-08-08T23:14:21.499Z",
-  source: "local"
+  buildTime: "2026-09-23T21:14:18.232Z",
+  source: "release"
 };
 
 function buildIdentifier() {
@@ -1104,7 +1104,7 @@ function hasPreReleaseSuffix(version) {
   return cleaned.includes("-");
 }
 
-const VERSION = "2.3.0";
+const VERSION = "2.4.0";
 
 const MIN_LIVE_VERSION = "12.3.0";
 
