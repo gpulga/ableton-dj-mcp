@@ -18,6 +18,11 @@
 Ask in plain language, and the AI reads and edits your open Live set in real
 time: tracks, clips, MIDI notes, devices, scenes, automation, playback.
 
+![An Ableton Live arrangement with drums, bass, leads, percussion, vocals and pads across Intro, Build, Drop and Breakdown sections](docs/images/arrangement.png)
+
+_Song sections, tracks, clips and device chains: everything here is readable and
+editable by the AI._
+
 > "Set tempo to 124, add a Drift bass on a new track, and write a rolling
 > 16th-note bassline in A minor for 8 bars."
 >
@@ -25,6 +30,11 @@ time: tracks, clips, MIDI notes, devices, scenes, automation, playback.
 >
 > "Duplicate scene 3, mute the kick for the first 4 bars, and automate the
 > filter opening across the break."
+
+It works on the whole set, from arrangement sections down to individual notes
+and velocities in a clip:
+
+![Session view with clips per track, and a percussion clip open in the note editor](docs/images/session-clip.png)
 
 It ships with electronic-music knowledge (house, tech house, melodic techno,
 indie dance and more), so genre and arrangement suggestions start from how those
@@ -74,6 +84,11 @@ A Max for Live device on a track in your set runs the MCP server. A small portal
 process connects your AI client to it. An optional Python remote script adds
 things Max can't reach, like the browser and clip automation. Details:
 [Architecture](./docs/contributing/Architecture.md).
+
+<img src="docs/images/device-setup.png" alt="The Ableton DJ MCP device's Setup tab: server Running on port 3350" width="380">
+
+_The device's Setup tab: server running on port 3350, ready for your AI to
+connect._
 
 ## Docs
 

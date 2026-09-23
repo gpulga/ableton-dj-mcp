@@ -108,7 +108,7 @@ function printLiveSteps(): void {
   console.log(
     "  3. Browser → Max for Live → Max MIDI Effect → drag 'Ableton_DJ_MCP' onto a track.",
   );
-  console.log("     Wait for 'MCP server running on :3350'.");
+  console.log("     Wait for the green 'Ready to build' on its Main tab.");
   console.log(
     "  4. (Recommended) File → Save Live Set as Default Set, so every new set has the device.",
   );
