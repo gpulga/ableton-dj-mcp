@@ -2,8 +2,7 @@
 // Copyright (C) 2026 Gabriel Pulga
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-import { electronicMusicSkills } from "#src/skills/electronic-music.ts";
-import { productionTechniquesSkills } from "#src/skills/production-techniques.ts";
+import { productionSkillsSummary } from "#src/skills/guides.ts";
 
 const codeTransformsSkills = `
 
@@ -168,8 +167,7 @@ C1-C2: duration /= 2           // halve duration of bass notes
 \`+=\` compounds on repeated calls; \`=\` is idempotent. \`*=\`/\`/=\` scale the current value (\`timing *=\` scales absolute note position). Use update-clip with only transforms to modify existing notes.
 MIDI params ignored for audio clips, vice versa.
 ${process.env.ENABLE_CODE_EXEC === "true" ? codeTransformsSkills : ""}
-${electronicMusicSkills}
-${productionTechniquesSkills}
+${productionSkillsSummary()}
 ## Working with Ableton Live
 
 **Views and Playback:**
@@ -187,7 +185,7 @@ ${productionTechniquesSkills}
 
 **Locators:** Use adj-update-live-set to create/rename/delete locators at bar|beat positions. Use locator names with adj-playback to start or loop from named positions.
 
-**Automation:** Use adj-automate to write parameter envelopes inside a clip (requires the Live Browser Bridge). Points are \`bar|beat:value\` pairs with values normalized 0..1 (e.g. \`points: "1|1:0, 9|1:1"\` sweeps over 8 bars). Target a device param via \`devicePath\` + \`paramName\`, or omit \`devicePath\` for mixer params (Volume, Pan, Send A..L). Shapes: linear, exponential, logarithmic, sine, s-curve, step. Recipes generate the points for common moves — see Production Techniques.
+**Automation:** Use adj-automate to write parameter envelopes inside a clip (requires the Live Browser Bridge). Points are \`bar|beat:value\` pairs with values normalized 0..1 (e.g. \`points: "1|1:0, 9|1:1"\` sweeps over 8 bars). Target a device param via \`devicePath\` + \`paramName\`, or omit \`devicePath\` for mixer params (Volume, Pan, Send A..L). Shapes: linear, exponential, logarithmic, sine, s-curve, step. Recipes generate the points for common moves — call \`adj-guide\` with topic \`fx-automation\` for the list.
 
 ### Device Paths
 

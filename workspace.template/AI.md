@@ -42,12 +42,12 @@ all tools are available regardless of where you cd from.
 
 ## MCP tools available
 
-The Ableton DJ MCP server exposes 24 tools, all prefixed `adj-`. Quick reference
+The Ableton DJ MCP server exposes 25 tools, all prefixed `adj-`. Quick reference
 (full reference: `../docs/Tools-Reference.md`):
 
 | Domain     | Tools                                                                                          |
 | ---------- | ---------------------------------------------------------------------------------------------- |
-| Workflow   | `adj-connect`, `adj-context`                                                                   |
+| Workflow   | `adj-connect`, `adj-context`, `adj-guide`                                                      |
 | Live Set   | `adj-read-live-set`, `adj-update-live-set`                                                     |
 | Track      | `adj-read-track`, `adj-create-track`, `adj-update-track`                                       |
 | Scene      | `adj-read-scene`, `adj-create-scene`, `adj-update-scene`                                       |

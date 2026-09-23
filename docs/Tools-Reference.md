@@ -1,6 +1,6 @@
 # Tools Reference
 
-Canonical catalog of all 24 `adj-*` tools. Other docs link here instead of
+Canonical catalog of all 25 `adj-*` tools. Other docs link here instead of
 duplicating. Read the `.def.ts` files for the full Zod schemas.
 
 ---
@@ -15,13 +15,23 @@ Connect to Ableton Live. Call this first before any other tool. No parameters.
 
 Read and write a persistent memory string visible to the AI across tool calls.
 Useful for storing project state, musical decisions, or notes. Also browses the
-configured sample folder.
+configured sample folder. Memory is off until **Use project memory** is ticked
+in the device's Context tab; until then `read` and `write` report it as
+disabled.
 
 - `read` — return current context
 - `write` — overwrite context with new content
-- `append` — add to existing context
 - `search` — list audio samples in the configured `sampleFolder` (set in config)
   as a tree with metadata
+
+### `adj-guide`
+
+Genre and production guidance, loaded on demand so it doesn't cost tokens on
+every `adj-connect`. `adj-connect` returns the topic list; fetch a topic before
+that kind of work. Read-only, no Live access.
+
+- `topic` — `genres`, `drums`, `bass`, `melodic`, `arrangement`,
+  `fx-automation`, or `velocity`
 
 ---
 
@@ -86,7 +96,8 @@ Create a new scene at a given index.
 
 ### `adj-update-scene`
 
-Update scene name, color, or launch it.
+Update scene name, color, tempo, or time signature. To launch a scene, use
+`adj-playback` with `action: "play-scene"`.
 
 ---
 

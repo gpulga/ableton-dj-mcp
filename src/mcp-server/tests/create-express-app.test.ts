@@ -108,6 +108,7 @@ describe("MCP Express App", () => {
       expect(toolNames).toStrictEqual([
         "adj-connect",
         "adj-context",
+        "adj-guide",
         "adj-read-live-set",
         "adj-update-live-set",
         "adj-read-track",

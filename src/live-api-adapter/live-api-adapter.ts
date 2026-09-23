@@ -41,6 +41,7 @@ import { readTrack } from "#src/tools/track/read/read-track.ts";
 import { updateTrack } from "#src/tools/track/update/update-track.ts";
 import { connect } from "#src/tools/workflow/connect.ts";
 import { context as contextTool } from "#src/tools/workflow/context.ts";
+import { guide } from "#src/tools/workflow/guide.ts";
 import { handleCodeExecResult } from "./code-exec-v8-protocol.ts";
 
 // Configure 2 outlets: MCP responses (0) and warnings (1)
@@ -111,6 +112,7 @@ const tools: Record<string, (args: unknown) => unknown> = {
     return duplicate(args as any, context);
   },
   "adj-context": (args) => contextTool(args as any, context),
+  "adj-guide": (args) => guide(args as any),
   "adj-raw-live-api": (args) => rawLiveApi(args as any, context),
 };
 /* eslint-enable @typescript-eslint/no-explicit-any -- end of tools dispatch section */

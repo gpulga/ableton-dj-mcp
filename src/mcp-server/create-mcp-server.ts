@@ -30,6 +30,7 @@ import { toolDefReadTrack } from "#src/tools/track/read/read-track.def.ts";
 import { toolDefUpdateTrack } from "#src/tools/track/update/update-track.def.ts";
 import { toolDefConnect } from "#src/tools/workflow/connect.def.ts";
 import { toolDefContext } from "#src/tools/workflow/context.def.ts";
+import { toolDefGuide } from "#src/tools/workflow/guide.def.ts";
 
 export type CallLiveApiFunction = (
   tool: string,
@@ -39,6 +40,7 @@ export type CallLiveApiFunction = (
 export const STANDARD_TOOL_DEFS: ToolDefFunction[] = [
   toolDefConnect,
   toolDefContext,
+  toolDefGuide,
   toolDefReadLiveSet,
   toolDefUpdateLiveSet,
   toolDefReadTrack,
