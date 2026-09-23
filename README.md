@@ -62,9 +62,9 @@ at `:3350/mcp`. Positions use bar|beat notation. Full schemas are in the
 |           | `adj-create-clip`       | C   | MIDI (bar\|beat notes) or audio (file path), Session slot or Arrangement position          |
 |           | `adj-update-clip`       | W   | Note add/remove, transform expressions (`velocity *= 0.8`), loop, pitch, volume, flags     |
 |           | `adj-microsection-mute` | W   | Velocity-0 mute map of pitches across bar ranges                                           |
-|           | `adj-automate` †        | R/W | Clip automation envelopes: write points, read (0.25-beat grid), clear; 6 curves, 8 recipes |
-| Device    | `adj-browse` †          | R   | Live browser tree walk with search; returns loadable URIs                                  |
-|           | `adj-create-device`     | C   | Native device by name, or any browser item by URI †; supports rack chain paths             |
+|           | `adj-automate`          | R/W | Clip automation envelopes: write points, read (0.25-beat grid), clear; 6 curves, 8 recipes |
+| Device    | `adj-browse`            | R   | Live browser tree walk with search; returns loadable URIs                                  |
+|           | `adj-create-device`     | C   | Native device by name, or any browser item by URI; supports rack chain paths               |
 |           | `adj-read-device`       | R   | Parameters (name, value, range), rack chains, drum pads, drum map                          |
 |           | `adj-update-device`     | W   | Parameter writes by name or index, range-clamped; nested racks                             |
 | Ops       | `adj-duplicate`         | C   | Track, scene, clip or device copy; Session → Arrangement                                   |
@@ -73,8 +73,7 @@ at `:3350/mcp`. Positions use bar|beat notation. Full schemas are in the
 |           | `adj-select`            | X   | Set UI selection: track, scene, clip                                                       |
 | Generate  | `adj-generate`          | —   | Euclidean/Bjorklund and named rhythms → bar\|beat notes. Pure function, no Live I/O        |
 
-**Op:** R read · W write · C create · D delete · X execute. † Requires the
-Python bridge (UDP `:11077`), installed by `npm run setup`.
+**Op:** R read · W write · C create · D delete · X execute.
 
 ## Requirements
 
