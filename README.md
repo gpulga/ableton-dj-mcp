@@ -40,6 +40,42 @@ It ships with electronic-music knowledge (house, tech house, melodic techno,
 indie dance and more), so genre and arrangement suggestions start from how those
 styles are actually built.
 
+## Capabilities
+
+24 MCP tools (`adj-*`), served over stdio via the portal or directly over HTTP
+at `:3350/mcp`. Positions use bar|beat notation. Full schemas are in the
+[Tools Reference](./docs/Tools-Reference.md).
+
+| Domain    | Tool                    | Op  | Surface                                                                                    |
+| --------- | ----------------------- | --- | ------------------------------------------------------------------------------------------ |
+| Session   | `adj-connect`           | R   | Handshake; returns Live version, set overview and usage skills. Required first call        |
+|           | `adj-context`           | R/W | Persistent project memory (read/write/append); sample-folder search                        |
+| Live Set  | `adj-read-live-set`     | R   | Tempo, time signature, groove, Link, punch/overdub, locators, tracks, scenes, meters       |
+|           | `adj-update-live-set`   | W   | Tempo, time signature, groove, Link, punch in/out, overdub, name, locators                 |
+| Track     | `adj-read-track`        | R   | Session/arrangement clips, device chain, routing, mixer state, output meters               |
+|           | `adj-create-track`      | C   | MIDI, audio or return track at index                                                       |
+|           | `adj-update-track`      | W   | Name, color, volume, pan, mute/solo/arm, I/O routing, group fold                           |
+| Scene     | `adj-read-scene`        | R   | Name, color, tempo, time signature                                                         |
+|           | `adj-create-scene`      | C   | Scene at index                                                                             |
+|           | `adj-update-scene`      | W/X | Name, color; launch                                                                        |
+| Clip      | `adj-read-clip`         | R   | Notes, timing, loop, sample/warp properties, playhead position                             |
+|           | `adj-create-clip`       | C   | MIDI (bar\|beat notes) or audio (file path), Session slot or Arrangement position          |
+|           | `adj-update-clip`       | W   | Note add/remove, transform expressions (`velocity *= 0.8`), loop, pitch, volume, flags     |
+|           | `adj-microsection-mute` | W   | Velocity-0 mute map of pitches across bar ranges                                           |
+|           | `adj-automate` †        | R/W | Clip automation envelopes: write points, read (0.25-beat grid), clear; 6 curves, 8 recipes |
+| Device    | `adj-browse` †          | R   | Live browser tree walk with search; returns loadable URIs                                  |
+|           | `adj-create-device`     | C   | Native device by name, or any browser item by URI †; supports rack chain paths             |
+|           | `adj-read-device`       | R   | Parameters (name, value, range), rack chains, drum pads, drum map                          |
+|           | `adj-update-device`     | W   | Parameter writes by name or index, range-clamped; nested racks                             |
+| Ops       | `adj-duplicate`         | C   | Track, scene, clip or device copy; Session → Arrangement                                   |
+|           | `adj-delete`            | D   | Track, scene, clip or device                                                               |
+| Transport | `adj-playback`          | X   | Play/stop, loop, fire/stop clips and scenes, record, MIDI capture, undo/redo, save, nudge  |
+|           | `adj-select`            | X   | Set UI selection: track, scene, clip                                                       |
+| Generate  | `adj-generate`          | —   | Euclidean/Bjorklund and named rhythms → bar\|beat notes. Pure function, no Live I/O        |
+
+**Op:** R read · W write · C create · D delete · X execute. † Requires the
+Python bridge (UDP `:11077`), installed by `npm run setup`.
+
 ## Requirements
 
 - **Ableton Live 12.3+** with **Max for Live** (Suite, or Standard + M4L)
