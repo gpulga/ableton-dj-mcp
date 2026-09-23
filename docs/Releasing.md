@@ -112,3 +112,10 @@ grep -o '1\.[0-9]\.[0-9]' dist/live-api-adapter.js | sort -u
 ```
 
 Should match the version in `package.json`.
+
+## Dependency updates
+
+Dependabot opens **one** grouped PR (npm + GitHub Actions, see
+[`.github/dependabot.yml`](../.github/dependabot.yml)) and keeps updating it as
+new versions ship. Nothing auto-merges: check CI, review, then approve and merge
+it by hand. Its `deps:` commit then shows up in the next release's changelog.

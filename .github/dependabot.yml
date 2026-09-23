@@ -1,14 +1,25 @@
 version: 2
-updates:
-  - package-ecosystem: npm
-    directory: /
+
+# All dependency updates (npm + GitHub Actions) land in ONE pull request.
+# Dependabot keeps updating that PR as new versions come out; nothing merges
+# automatically -- a maintainer reviews, approves, and merges it by hand.
+multi-ecosystem-groups:
+  all-dependencies:
     schedule:
       interval: weekly
       day: monday
     commit-message:
       prefix: "deps"
     labels:
-      - dependencies
+      - deps
+    assignees:
+      - gpulga
+
+updates:
+  - package-ecosystem: npm
+    directory: /
+    patterns: ["*"]
+    multi-ecosystem-group: all-dependencies
     ignore:
       # eslint 10 breaks the build in three ways and CI cannot catch it,
       # because npm ci fails before any job runs. See PR #274.
@@ -37,10 +48,5 @@ updates:
 
   - package-ecosystem: github-actions
     directory: /
-    schedule:
-      interval: weekly
-      day: monday
-    commit-message:
-      prefix: "ci"
-    labels:
-      - dependencies
+    patterns: ["*"]
+    multi-ecosystem-group: all-dependencies
