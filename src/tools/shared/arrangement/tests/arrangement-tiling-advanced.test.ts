@@ -12,7 +12,12 @@ import {
   setupTileClip,
   setupTrackWithQueuedMethods,
 } from "./arrangement-tiling-test-helpers.ts";
-import { createPartialTile, tileClipToRange } from "../arrangement-tiling.ts";
+import {
+  assertRepeatFits,
+  createPartialTile,
+  MAX_TILES,
+  tileClipToRange,
+} from "../arrangement-tiling.ts";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -100,7 +105,46 @@ describe("createPartialTile", () => {
   });
 });
 
+describe("assertRepeatFits", () => {
+  it("refuses a 1-beat clip stretched to 80 bars before anything is written", () => {
+    expect(() => assertRepeatFits(320, 1)).toThrow(/320 times \(max 64\)/);
+  });
+
+  it("allows exactly MAX_TILES repeats and shortening", () => {
+    expect(() => assertRepeatFits(4 * MAX_TILES, 4)).not.toThrow();
+    expect(() => assertRepeatFits(2, 4)).not.toThrow();
+  });
+});
+
 describe("tileClipToRange", () => {
+  it("refuses to lay down more than MAX_TILES clips", () => {
+    const sourceClip = setupMidiSourceClip("100", 0);
+    const track = setupTrackWithQueuedMethods(0, {});
+
+    // 4-beat loop over 320 beats = 80 tiles
+    expect(() =>
+      tileClipToRange(sourceClip, track, 100, 320, 1000, mockContext),
+    ).toThrow(/repeat this 4-beat clip 80 times \(max 64\)/);
+    expect(track.call).not.toHaveBeenCalled();
+  });
+
+  it("counts a partial final tile toward MAX_TILES", () => {
+    const sourceClip = setupMidiSourceClip("100", 0);
+    const track = setupTrackWithQueuedMethods(0, {});
+
+    expect(MAX_TILES).toBe(64);
+    expect(() =>
+      tileClipToRange(
+        sourceClip,
+        track,
+        100,
+        4 * MAX_TILES + 4,
+        1000,
+        mockContext,
+      ),
+    ).toThrow(/65 times/);
+  });
+
   it("creates correct number of full tiles without remainder", () => {
     const sourceClip = setupMidiSourceClip("100", 0);
     const track = setupTrackWithQueuedMethods(0, {

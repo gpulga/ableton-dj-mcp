@@ -16,6 +16,11 @@ import {
   clearClipAtDuplicateTarget,
   moveClipFromHolding,
 } from "#src/tools/shared/arrangement/arrangement-tiling-workaround.ts";
+import { assertRepeatFits } from "#src/tools/shared/arrangement/arrangement-tiling.ts";
+import {
+  snapshotArrangementTrack,
+  warnArrangementWriteEffects,
+} from "#src/tools/shared/arrangement/arrangement-write-effects.ts";
 import { toLiveApiId } from "#src/tools/shared/utils.ts";
 import { formatSlot } from "#src/tools/shared/validation/position-parsing.ts";
 
@@ -163,6 +168,9 @@ export async function createClipsForLength(
   const sourceClipLength = sourceClip.getProperty("length") as number;
   const isMidiClip = sourceClip.getProperty("is_midi_clip") === 1;
   const duplicatedClips: MinimalClipInfo[] = [];
+
+  // Refuse a runaway repeat before the first copy lands, not after
+  assertRepeatFits(arrangementLengthBeats, sourceClipLength);
 
   if (arrangementLengthBeats < sourceClipLength) {
     // Case 1: Shortening - use holding area approach (preserves clip data including envelopes)
@@ -379,6 +387,7 @@ export async function duplicateClipToArrangement(
 
   const track = LiveAPI.from(livePath.track(trackIndex));
   const duplicatedClips: MinimalClipInfo[] = [];
+  const before = snapshotArrangementTrack(trackIndex);
 
   if (arrangementLength != null) {
     // Use the clip's time signature for duration calculation
@@ -428,6 +437,11 @@ export async function duplicateClipToArrangement(
 
     duplicatedClips.push(getMinimalClipInfo(newClip));
   }
+
+  warnArrangementWriteEffects(
+    before,
+    duplicatedClips.map((info) => info.id),
+  );
 
   // Return single clip info directly, or clips array with trackIndex for multiple
   if (duplicatedClips.length === 1) {

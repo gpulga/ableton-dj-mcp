@@ -13,6 +13,10 @@ import {
   type MidiNote,
 } from "#src/tools/clip/helpers/clip-result-helpers.ts";
 import { MAX_AUTO_CREATED_SCENES } from "#src/tools/constants.ts";
+import {
+  snapshotArrangementTrack,
+  warnArrangementWriteEffects,
+} from "#src/tools/shared/arrangement/arrangement-write-effects.ts";
 import { parseArrangementStartList } from "#src/tools/shared/validation/position-parsing.ts";
 import {
   createAudioArrangementClip,
@@ -213,6 +217,8 @@ export function processClipIteration(
 ): object {
   let clip: LiveAPI;
   let currentSceneIndex: number | undefined;
+  const before =
+    view === "arrangement" ? snapshotArrangementTrack(trackIndex) : null;
 
   if (sampleFile) {
     // Audio clip creation
@@ -293,6 +299,10 @@ export function processClipIteration(
     if (notes.length > 0) {
       clip.call("add_new_notes", { notes });
     }
+  }
+
+  if (before != null) {
+    warnArrangementWriteEffects(before, [clip.id]);
   }
 
   return buildClipResult(

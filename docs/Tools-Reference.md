@@ -255,6 +255,12 @@ Duplicate a track, scene, clip, or device.
 
 - Same `type` options as delete
 - Optional `targetIndex` for where to place the copy
+- Arrangement writes (`adj-create-clip`/`adj-duplicate` into the arrangement)
+  overwrite whatever is in that range, like Live does. Each clip that was
+  deleted, shortened or split comes back as a warning naming its position.
+- `arrangementLength` longer than the clip repeats it (the Live API can't
+  stretch an arrangement clip). More than 64 repeats is refused: use a longer
+  source clip instead.
 
 ---
 
