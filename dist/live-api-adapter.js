@@ -1032,9 +1032,9 @@ if (!Array.prototype.with) {
 
 const BUILD_INFO = {
   branch: "release-please--branches--main--components--ableton-dj-mcp",
-  sha: "f158a0af",
+  sha: "5d727df8",
   dirty: false,
-  buildTime: "2026-09-23T23:13:08.955Z",
+  buildTime: "2026-10-24T22:34:24.718Z",
   source: "release"
 };
 
@@ -1165,7 +1165,7 @@ function hasPreReleaseSuffix(version) {
   return cleaned.includes("-");
 }
 
-const VERSION = "2.5.0";
+const VERSION = "2.6.0";
 
 const MIN_LIVE_VERSION = "12.3.0";
 
@@ -2469,6 +2469,65 @@ function prepareSessionClipSlot(trackIndex, sceneIndex, liveSet, maxAutoCreatedS
   return clipSlot;
 }
 
+const EPSILON$3 = .001;
+
+function snapshotArrangementTrack(trackIndex) {
+  return {
+    trackIndex: trackIndex,
+    clips: scanTrack(trackIndex)
+  };
+}
+
+function warnArrangementWriteEffects(before, written) {
+  const ours = new Set(written);
+  const wasThere = new Set(before.clips.map(clip => clip.id));
+  const after = scanTrack(before.trackIndex);
+  const nowById = new Map(after.map(clip => [ clip.id, clip ]));
+  const remnants = after.filter(clip => !ours.has(clip.id) && !wasThere.has(clip.id));
+  const at = positionFormatter(before.trackIndex);
+  const messages = [];
+  for (const was of before.clips) {
+    if (ours.has(was.id)) continue;
+    const effect = effectOnClip(was, nowById.get(was.id), remnants, at);
+    if (effect != null) messages.push(effect);
+  }
+  for (const message of messages) {
+    warn(message);
+  }
+  return messages;
+}
+
+function effectOnClip(was, now, remnants, at) {
+  const inside = remnants.filter(clip => clip.start > was.start + EPSILON$3 && clip.start < was.end - EPSILON$3);
+  if (now == null) {
+    const rest = inside.find(clip => Math.abs(clip.end - was.end) <= EPSILON$3);
+    return rest == null ? `arrangement write overwrote the clip at ${at(was.start)}` : `arrangement write shortened the clip at ${at(was.start)}; it now starts at ${at(rest.start)}`;
+  }
+  const tail = inside[0];
+  if (tail != null) {
+    return `arrangement write split the clip at ${at(was.start)}; its tail is now a separate clip at ${at(tail.start)}`;
+  }
+  if (Math.abs(now.start - was.start) > EPSILON$3 || Math.abs(now.end - was.end) > EPSILON$3) {
+    return `arrangement write shortened the clip at ${at(was.start)}`;
+  }
+  return void 0;
+}
+
+function scanTrack(trackIndex) {
+  return LiveAPI.from(livePath.track(trackIndex)).getChildren("arrangement_clips").map(clip => ({
+    id: clip.id,
+    start: clip.getProperty("start_time"),
+    end: clip.getProperty("end_time")
+  }));
+}
+
+function positionFormatter(trackIndex) {
+  const liveSet = LiveAPI.from(livePath.liveSet);
+  const numerator = liveSet.getProperty("signature_numerator");
+  const denominator = liveSet.getProperty("signature_denominator");
+  return beats => `${abletonBeatsToBarBeat(beats, numerator, denominator)} on track ${trackIndex}`;
+}
+
 function createAudioSessionClip(trackIndex, sceneIndex, sampleFile, liveSet, maxAutoCreatedScenes) {
   const clipSlot = prepareSessionClipSlot(trackIndex, sceneIndex, liveSet, maxAutoCreatedScenes);
   clipSlot.call("create_audio_clip", sampleFile);
@@ -2494,16 +2553,24 @@ function createAudioArrangementClip(trackIndex, arrangementStartBeats, sampleFil
   };
 }
 
+function endMovesFirst(nextStart, currentEnd) {
+  return nextStart != null && currentEnd != null && nextStart >= currentEnd;
+}
+
 function buildClipProperties(startBeats, endBeats, firstStartBeats, looping, clipName, color, timeSigNumerator, timeSigDenominator, clipLength) {
-  const propsToSet = {
-    start_marker: startBeats ?? 0,
-    loop_start: startBeats ?? 0,
-    loop_end: 0,
-    end_marker: 0
-  };
+  const start = startBeats ?? 0;
   const effectiveEnd = endBeats ?? clipLength;
-  propsToSet.loop_end = effectiveEnd;
-  propsToSet.end_marker = effectiveEnd;
+  const propsToSet = endMovesFirst(start, clipLength) ? {
+    loop_end: effectiveEnd,
+    end_marker: effectiveEnd,
+    start_marker: start,
+    loop_start: start
+  } : {
+    start_marker: start,
+    loop_start: start,
+    loop_end: effectiveEnd,
+    end_marker: effectiveEnd
+  };
   if (looping && firstStartBeats != null) {
     propsToSet.playing_position = firstStartBeats;
   }
@@ -2594,6 +2661,7 @@ function createArrangementClip(trackIndex, arrangementStartBeats, clipLength) {
 function processClipIteration(view, trackIndex, sceneIndex, arrangementStartBeats, arrangementStart, clipLength, liveSet, startBeats, endBeats, firstStartBeats, looping, clipName, color, timeSigNumerator, timeSigDenominator, notationString, notes, length, sampleFile, transformedCount) {
   let clip;
   let currentSceneIndex;
+  const before = view === "arrangement" ? snapshotArrangementTrack(trackIndex) : null;
   if (sampleFile) {
     if (view === "session") {
       const validSceneIndex = sceneIndex;
@@ -2627,6 +2695,9 @@ function processClipIteration(view, trackIndex, sceneIndex, arrangementStartBeat
         notes: notes
       });
     }
+  }
+  if (before != null) {
+    warnArrangementWriteEffects(before, [ clip.id ]);
   }
   return buildClipResult(clip, trackIndex, view, currentSceneIndex, arrangementStart, notationString, notes, length, timeSigNumerator, timeSigDenominator, sampleFile, transformedCount);
 }
@@ -12860,40 +12931,53 @@ function handleNoteUpdates(clip, notationString, transformString, noteUpdateMode
   };
 }
 
-function addLoopProperties(propsToSet, setEndFirst, startBeats, endBeats, startMarkerBeats, looping) {
-  if (setEndFirst && endBeats != null && looping !== false) {
-    propsToSet.loop_end = endBeats;
+function addRegionProperties(propsToSet, region) {
+  const {start: start, end: end, startMarker: startMarker, writesLoop: writesLoop, writesEndMarker: writesEndMarker} = region;
+  const addEnds = first => {
+    if (end == null) return;
+    if (writesLoop && region.loopEndFirst === first) {
+      propsToSet.loop_end = end;
+    }
+    if (writesEndMarker && region.markerEndFirst === first) {
+      propsToSet.end_marker = end;
+    }
+  };
+  addEnds(true);
+  if (writesLoop && start != null) {
+    propsToSet.loop_start = start;
   }
-  if (startBeats != null && looping !== false) {
-    propsToSet.loop_start = startBeats;
+  if (startMarker != null) {
+    propsToSet.start_marker = startMarker;
   }
-  if (startMarkerBeats != null) {
-    propsToSet.start_marker = startMarkerBeats;
-  }
-  if (!setEndFirst && endBeats != null && looping !== false) {
-    propsToSet.loop_end = endBeats;
-  }
+  addEnds(false);
 }
 
-function buildClipPropertiesToSet({name: name, color: color, timeSignature: timeSignature, timeSigNumerator: timeSigNumerator, timeSigDenominator: timeSigDenominator, startMarkerBeats: startMarkerBeats, looping: looping, isLooping: isLooping, startBeats: startBeats, endBeats: endBeats, currentLoopEnd: currentLoopEnd, legato: legato, muted: muted}) {
-  const setEndFirst = isLooping && startBeats != null && endBeats != null && currentLoopEnd != null ? startBeats >= currentLoopEnd : false;
+function buildClipPropertiesToSet({name: name, color: color, timeSignature: timeSignature, timeSigNumerator: timeSigNumerator, timeSigDenominator: timeSigDenominator, startMarkerBeats: startMarkerBeats, looping: looping, isLooping: isLooping, startBeats: startBeats, endBeats: endBeats, currentLoopEnd: currentLoopEnd, currentEndMarker: currentEndMarker, legato: legato, muted: muted}) {
   const propsToSet = {
     name: name,
     color: color,
     signature_numerator: timeSignature != null ? timeSigNumerator : null,
-    signature_denominator: timeSignature != null ? timeSigDenominator : null,
-    looping: looping,
-    legato: legato,
-    muted: muted
+    signature_denominator: timeSignature != null ? timeSigDenominator : null
   };
-  if (isLooping || looping == null) {
-    addLoopProperties(propsToSet, setEndFirst, startBeats, endBeats, startMarkerBeats, looping);
-  } else if (startMarkerBeats != null) {
-    propsToSet.start_marker = startMarkerBeats;
+  const markerEndFirst = endMovesFirst(startMarkerBeats, currentEndMarker);
+  const region = {
+    start: startBeats,
+    end: endBeats,
+    startMarker: startMarkerBeats,
+    writesLoop: (isLooping || looping == null) && looping !== false,
+    writesEndMarker: !isLooping || looping === false || markerEndFirst,
+    loopEndFirst: endMovesFirst(startBeats, currentLoopEnd),
+    markerEndFirst: markerEndFirst
+  };
+  if (looping === false) {
+    addRegionProperties(propsToSet, region);
+    propsToSet.looping = false;
+  } else {
+    propsToSet.looping = looping;
+    addRegionProperties(propsToSet, region);
   }
-  if ((!isLooping || looping === false) && endBeats != null) {
-    propsToSet.end_marker = endBeats;
-  }
+  propsToSet.legato = legato;
+  propsToSet.muted = muted;
   return propsToSet;
 }
 
@@ -12963,6 +13047,8 @@ function adjustClipPreRoll(clip, track, isMidiClip, context) {
   }
 }
 
+const MAX_TILES = 64;
+
 function createPartialTile(sourceClip, track, targetPosition, partialLength, holdingAreaStart, isMidiClip, context, adjustPreRoll = true, contentOffset = 0) {
   const {holdingClipId: holdingClipId} = createShortenedClipInHolding(sourceClip, track, partialLength, holdingAreaStart, isMidiClip, context);
   const partialTile = moveClipFromHolding(holdingClipId, track, targetPosition, isMidiClip, context);
@@ -12992,6 +13078,7 @@ function tileClipToRange(sourceClip, track, startPosition, totalLength, holdingA
   const arrangementTileLength = tileLength ?? clipLength;
   const fullTiles = Math.floor(totalLength / arrangementTileLength);
   const remainder = totalLength % arrangementTileLength;
+  assertTileCount(fullTiles + (remainder > .001 ? 1 : 0), arrangementTileLength);
   let currentContentOffset = startOffset;
   let currentPosition = startPosition;
   for (let i = 0; i < fullTiles; i++) {
@@ -13022,6 +13109,18 @@ function tileClipToRange(sourceClip, track, startPosition, totalLength, holdingA
     });
   }
   return createdClips;
+}
+
+function assertTileCount(tileCount, tileLength) {
+  if (tileCount > MAX_TILES) {
+    throw new Error(`lengthening would repeat this ${tileLength}-beat clip ${tileCount} times (max ${MAX_TILES}): the Live API can't stretch an arrangement clip, only repeat it. Use a longer source clip (e.g. a loop of whole bars) or a shorter arrangementLength`);
+  }
+}
+
+function assertRepeatFits(totalLength, clipLength) {
+  if (clipLength > 0 && totalLength > clipLength) {
+    assertTileCount(Math.ceil(totalLength / clipLength - .001), clipLength);
+  }
 }
 
 const EPSILON = .001;
@@ -13408,17 +13507,22 @@ function handleSessionSlotMove({clip: clip, toSlot: toSlot, updatedClips: update
   updatedClips.push(buildClipResultObject(newClip.id, noteResult, toSlot));
 }
 
-function determineStartMarker(firstStartBeats, startBeats, endMarker) {
+function determineStartMarker(firstStartBeats, startBeats, endBeats, endMarker) {
+  const contentEnd = Math.max(endMarker, endBeats ?? endMarker);
   if (firstStartBeats != null) {
-    if (firstStartBeats < endMarker) {
+    if (firstStartBeats < contentEnd) {
       return firstStartBeats;
     }
-    warn(`firstStart parameter ignored - exceeds clip content boundary (${firstStartBeats} >= ${endMarker})`);
+    warn(`firstStart parameter ignored - exceeds clip content boundary (${firstStartBeats} >= ${contentEnd})`);
     return null;
   }
-  if (startBeats != null && startBeats < endMarker) {
+  if (startBeats == null) {
+    return null;
+  }
+  if (startBeats < contentEnd) {
     return startBeats;
   }
+  warn(`start marker not moved - start ${startBeats} is at or past the clip's end (${contentEnd}); pass length to move the end too`);
   return null;
 }
 
@@ -13446,11 +13550,18 @@ function calculateBeatPositions({start: start, length: length, firstStart: first
     }
     endBeats = startBeats + lengthBeats;
   }
+  if (startBeats != null && endBeats == null && isLooping) {
+    const loopStart = clip.getProperty("loop_start");
+    const loopEnd = clip.getProperty("loop_end");
+    if (startBeats >= loopEnd) {
+      endBeats = startBeats + (loopEnd - loopStart);
+    }
+  }
   if (firstStart != null && isLooping) {
     firstStartBeats = barBeatToAbletonBeats(firstStart, timeSigNumerator, timeSigDenominator);
   }
   const endMarker = clip.getProperty("end_marker");
-  const startMarkerBeats = determineStartMarker(firstStartBeats, startBeats, endMarker);
+  const startMarkerBeats = determineStartMarker(firstStartBeats, startBeats, endBeats, endMarker);
   return {
     startBeats: startBeats,
     endBeats: endBeats,
@@ -13549,7 +13660,8 @@ function applyTimingAndBasicProperties(clip, {start: start, length: length, firs
     clip: clip,
     isLooping: isLooping
   });
-  const currentLoopEnd = isLooping ? clip.getProperty("loop_end") : null;
+  const currentLoopEnd = clip.getProperty("loop_end");
+  const currentEndMarker = clip.getProperty("end_marker");
   applyBasicClipProperties(clip, {
     name: name,
     color: color,
@@ -13562,6 +13674,7 @@ function applyTimingAndBasicProperties(clip, {start: start, length: length, firs
     startBeats: startBeats,
     endBeats: endBeats,
     currentLoopEnd: currentLoopEnd,
+    currentEndMarker: currentEndMarker,
     legato: legato,
     muted: muted
   });
@@ -16276,6 +16389,80 @@ function buildDrumPadInfo(pad, path, options) {
   return drumPadInfo;
 }
 
+const REPLACE_SAMPLE_MIN_VERSION = "12.4.0";
+
+const SAMPLE_PARAM = "sample";
+
+const GAIN_PARAM = "gaindb";
+
+function simplerSampleParam(name) {
+  const lower = name.trim().toLowerCase();
+  if (lower === SAMPLE_PARAM) return "sample";
+  if (lower === GAIN_PARAM) return "gainDb";
+  return null;
+}
+
+function loadSimplerSample(device, filePath) {
+  const path = filePath.trim();
+  if (!isAbsolutePath(path)) {
+    return `'sample' must be an absolute file path (got "${path}")`;
+  }
+  const refusal = simplerRefusal(device, "sample");
+  if (refusal != null) {
+    return refusal;
+  }
+  if (!supportsReplaceSample()) {
+    return `'sample' requires Live ${REPLACE_SAMPLE_MIN_VERSION} or later`;
+  }
+  device.call("replace_sample", path);
+  return null;
+}
+
+function setSimplerSampleGain(device, dB) {
+  if (typeof dB !== "number") {
+    return `'gainDb' must be a number in dB (got "${dB}")`;
+  }
+  const refusal = simplerRefusal(device, "gainDb");
+  if (refusal != null) {
+    return refusal;
+  }
+  const sample = device.getChildren("sample")[0];
+  if (!sample?.getProperty("file_path")) {
+    return `'gainDb' requires a loaded sample`;
+  }
+  sample.set("gain", dbToLiveGain(dB));
+  return null;
+}
+
+function findChainSimpler(target) {
+  const chain = target.type === "DrumPad" ? target.getChildren("chains")[0] : target;
+  if (chain == null) {
+    return null;
+  }
+  return chain.getChildren("devices").find(device => device.getProperty("class_display_name") === DEVICE_CLASS.SIMPLER) ?? null;
+}
+
+function simplerRefusal(device, param) {
+  const className = device.getProperty("class_display_name");
+  if (className !== DEVICE_CLASS.SIMPLER) {
+    return `'${param}' only applies to Simpler (got ${className})`;
+  }
+  if (device.getProperty("multi_sample_mode") > 0) {
+    return `'${param}' is not supported on Simpler in multi-sample mode`;
+  }
+  return null;
+}
+
+function supportsReplaceSample() {
+  const raw = LiveAPI.from("live_app").call("get_version_string");
+  const version = Array.isArray(raw) ? String(raw[0]) : String(raw);
+  return !isNewerVersion(version, REPLACE_SAMPLE_MIN_VERSION);
+}
+
+function isAbsolutePath(path) {
+  return path.startsWith("/") || /^[A-Za-z]:[/\\]/.test(path);
+}
+
 function isValidUpdateType(type) {
   return type.endsWith("Device") || type.endsWith("Chain") || type === "DrumPad";
 }
@@ -16331,15 +16518,34 @@ function parseParamLines(input) {
 
 const BINARY_SEARCH_ITERATIONS = 40;
 
+const AUTOMATION_ACTIVE = 1;
+
 function setParamValues(device, paramsInput) {
   const paramEntries = parseParamLines(paramsInput);
-  for (const [key, inputValue] of paramEntries) {
+  const overridden = [];
+  const sampleEntries = paramEntries.filter(([key]) => simplerSampleParam(key) === "sample");
+  const otherEntries = paramEntries.filter(([key]) => simplerSampleParam(key) !== "sample");
+  for (const [key, inputValue] of [ ...sampleEntries, ...otherEntries ]) {
+    const sampleParam = simplerSampleParam(key);
+    if (sampleParam != null) {
+      const refusal = sampleParam === "sample" ? loadSimplerSample(device, String(inputValue)) : setSimplerSampleGain(device, inputValue);
+      if (refusal != null) {
+        warn(`updateDevice: ${refusal}`);
+      }
+      continue;
+    }
     const param = resolveParamByName(device, key) ?? (/^\d+$/.test(key) ? resolveParamForDevice(device, key) : null);
     if (!param?.exists()) {
       warn(`updateDevice: param "${key}" not found on device`);
       continue;
     }
+    if (param.getProperty("automation_state") === AUTOMATION_ACTIVE) {
+      overridden.push(param.getProperty("name"));
+    }
     setParamValue(param, inputValue);
+  }
+  if (overridden.length > 0) {
+    warn(`updateDevice: writing ${overridden.join(", ")} overrode its automation. Live stops playing that automation and clip envelope until re-enabled (adj-playback action re-enable-automation). Finish sound design before automating, or re-enable after`);
   }
 }
 
@@ -17012,7 +17218,9 @@ function updateDeviceProperties(target, type, options) {
 }
 
 function updateNonDeviceProperties(target, type, options) {
-  warnIfSet("params", options.params, type);
+  if (options.params != null) {
+    applyParamsToChainSimpler(target, type, options.params);
+  }
   warnIfSet("macroVariation", options.macroVariation, type);
   warnIfSet("macroVariationIndex", options.macroVariationIndex, type);
   warnIfSet("macroCount", options.macroCount, type);
@@ -17032,21 +17240,34 @@ function updateNonDeviceProperties(target, type, options) {
     warnIfSet("color", options.color, type);
   }
   if (type === "DrumChain") {
-    if (options.chokeGroup != null) {
-      target.set("choke_group", options.chokeGroup);
-    }
-    if (options.mappedPitch != null) {
-      const midiNote = noteNameToMidi(options.mappedPitch);
-      if (midiNote != null) {
-        target.set("out_note", midiNote);
-      } else {
-        warn(`updateDevice: invalid note name "${options.mappedPitch}"`);
-      }
-    }
+    updateDrumChainProperties(target, options);
   } else {
     warnIfSet("chokeGroup", options.chokeGroup, type);
     warnIfSet("mappedPitch", options.mappedPitch, type);
   }
+}
+
+function updateDrumChainProperties(target, options) {
+  if (options.chokeGroup != null) {
+    target.set("choke_group", options.chokeGroup);
+  }
+  if (options.mappedPitch != null) {
+    const midiNote = noteNameToMidi(options.mappedPitch);
+    if (midiNote != null) {
+      target.set("out_note", midiNote);
+    } else {
+      warn(`updateDevice: invalid note name "${options.mappedPitch}"`);
+    }
+  }
+}
+
+function applyParamsToChainSimpler(target, type, params) {
+  const simpler = findChainSimpler(target);
+  if (simpler == null) {
+    warn(`updateDevice: 'params' on a ${type} applies to its Simpler, and it has none. Add one with adj-create-device deviceName=Simpler at this path first`);
+    return;
+  }
+  setParamValues(simpler, params);
 }
 
 function euclidean(pulses, steps) {
@@ -17733,6 +17954,9 @@ function readLiveSet(args = {}, _context = {}) {
     }));
   } else {
     result.sceneCount = sceneIds.length;
+  }
+  if (liveSet.getProperty("re_enable_automation_enabled") > 0) {
+    result.automationOverridden = true;
   }
   const isPlaying = liveSet.getProperty("is_playing") > 0;
   if (isPlaying) {
@@ -18446,6 +18670,7 @@ async function createClipsForLength(sourceClip, track, arrangementStartBeats, ar
   const sourceClipLength = sourceClip.getProperty("length");
   const isMidiClip = sourceClip.getProperty("is_midi_clip") === 1;
   const duplicatedClips = [];
+  assertRepeatFits(arrangementLengthBeats, sourceClipLength);
   if (arrangementLengthBeats < sourceClipLength) {
     if (!isMidiClip && !context.silenceWavPath) {
       warn("silenceWavPath missing in context - audio clip shortening may fail");
@@ -18529,6 +18754,7 @@ async function duplicateClipToArrangement(clipId, arrangementStartBeats, name, c
   }
   const track = LiveAPI.from(livePath.track(trackIndex));
   const duplicatedClips = [];
+  const before = snapshotArrangementTrack(trackIndex);
   if (arrangementLength != null) {
     const clipTimeSigNumerator = clip.getProperty("signature_numerator");
     const clipTimeSigDenominator = clip.getProperty("signature_denominator");
@@ -18546,6 +18772,7 @@ async function duplicateClipToArrangement(clipId, arrangementStartBeats, name, c
     });
     duplicatedClips.push(getMinimalClipInfo(newClip));
   }
+  warnArrangementWriteEffects(before, duplicatedClips.map(info => info.id));
   if (duplicatedClips.length === 1) {
     return duplicatedClips[0];
   }
@@ -19483,6 +19710,16 @@ function applyRoutingProperties(track, params) {
   }
 }
 
+function applyArm(track, arm) {
+  if (arm == null) {
+    return;
+  }
+  track.set("arm", arm);
+  if (track.getProperty("arm") > 0 !== arm) {
+    warn(`updateTrack: arm ${arm} did not stick on track ${track.id} (check the track can be armed and has an input)`);
+  }
+}
+
 function applyMonitoringState(track, monitoringState) {
   if (monitoringState == null) {
     return;
@@ -19624,8 +19861,7 @@ async function updateTrack({ids: ids, name: name, color: color, gainDb: gainDb, 
       name: getNameForIndex(name, i, parsedNames),
       color: trackColor,
       mute: mute,
-      solo: solo,
-      arm: arm
+      solo: solo
     });
     if (trackColor != null) {
       verifyColorQuantization(track, trackColor);
@@ -19651,6 +19887,7 @@ async function updateTrack({ids: ids, name: name, color: color, gainDb: gainDb, 
     applyFoldState(track, folded);
     applyMonitoringState(track, monitoringState);
     applySendProperties(track, sendGainDb, sendReturn);
+    applyArm(track, arm);
     const trackResult = {
       id: track.id
     };

@@ -743,8 +743,8 @@ import os from "node:os";
 
 const BUILD_INFO = {
   branch: "release-please--branches--main--components--ableton-dj-mcp",
-  sha: "f158a0af",
-  buildTime: "2026-09-23T23:13:08.955Z"
+  sha: "5d727df8",
+  buildTime: "2026-10-24T22:34:24.718Z"
 };
 
 function buildIdentifier() {
@@ -809,7 +809,7 @@ function hasPreReleaseSuffix(version) {
   return cleaned.includes("-");
 }
 
-const VERSION = "2.5.0";
+const VERSION = "2.6.0";
 
 var RequestError = class extends Error {
   constructor(message, options) {
@@ -31099,6 +31099,8 @@ const DEFAULT_AUTOMATION_TIMEOUT_MS = 1e4;
 
 const DEFAULT_PING_TIMEOUT_MS = 1500;
 
+const DEFAULT_UNDO_STEP_TIMEOUT_MS = 1e3;
+
 const PING_FRESHNESS_MS = 3e4;
 
 const CLIENT_CLOSED_MESSAGE = "client closed";
@@ -31113,6 +31115,7 @@ class BrowserBridgeClient {
   socketReady=null;
   pending=new Map;
   lastPingOkAt=0;
+  lastPingFailedAt=0;
   closed=false;
   constructor(options = {}) {
     this.host = options.host ?? DEFAULT_HOST;
@@ -31133,6 +31136,15 @@ class BrowserBridgeClient {
     } catch {
       return false;
     }
+  }
+  async isAliveCached() {
+    if (Date.now() - this.lastPingFailedAt < PING_FRESHNESS_MS) return false;
+    const alive = await this.ensureAlive();
+    if (!alive) this.lastPingFailedAt = Date.now();
+    return alive;
+  }
+  async endUndoStep(timeoutMs = DEFAULT_UNDO_STEP_TIMEOUT_MS) {
+    await this.send("end_undo_step", {}, timeoutMs);
   }
   async browse(args, timeoutMs = DEFAULT_BROWSE_TIMEOUT_MS) {
     return await this.send("browse", {
@@ -31488,7 +31500,11 @@ function downsample(points, maxPoints) {
   return out;
 }
 
-const POINT_PATTERN = /^(\S+)\s*:\s*([\d.]+)$/;
+const POINT_PATTERN = /^(\S+?)\s*:\s*(\S.*)$/;
+
+const NORMALIZED_PATTERN = /^[\d.]+$/;
+
+const DISPLAY_PATTERN = /^-?(?:\d+(?:\.\d*)?|\.\d+|inf)\s*(?:khz|hz|db|%|ms|s)$/i;
 
 function parsePoints(input) {
   const entries = input.split(/[\n,]/).map(entry => entry.trim()).filter(entry => entry.length > 0);
@@ -31507,12 +31523,19 @@ function parseEntry(entry) {
     throw new Error(`invalid point "${entry}" — expected '<bar|beat>:<value>' like '1|1:0.5'`);
   }
   const barBeat = match[1];
-  const value = Number.parseFloat(match[2]);
+  const raw = match[2].trim();
   if (!barBeat.includes("|")) {
     throw new Error(`invalid point "${entry}" — position must be bar|beat like '9|1'`);
   }
-  if (Number.isNaN(value) || value < 0 || value > 1) {
-    throw new Error(`invalid point "${entry}" — value must be between 0 and 1`);
+  if (DISPLAY_PATTERN.test(raw)) {
+    return {
+      barBeat: barBeat,
+      value: raw.replaceAll(/\s+/g, "")
+    };
+  }
+  const value = Number.parseFloat(raw);
+  if (!NORMALIZED_PATTERN.test(raw) || Number.isNaN(value) || value < 0 || value > 1) {
+    throw new Error(`invalid point "${entry}" — value must be 0..1 or a value with a unit like '1200Hz', '-12dB', '25%'`);
   }
   return {
     barBeat: barBeat,
@@ -31679,6 +31702,8 @@ function quoteCompactLiteralKeys(text) {
   return out;
 }
 
+const AUTOMATION_VALUES_TIMEOUT_MS = 1e4;
+
 const STALE_BRIDGE_HINT = "Bridge is outdated and missing the automation ops. Rerun `npm run install:bridge`, restart Live, and re-enable the control surface.";
 
 async function handleAutomate(bridge, next, args) {
@@ -31722,13 +31747,30 @@ async function runAction(bridge, action, args, clipInfo) {
       points: result.points.map(([timeBeats, value]) => `${abletonBeatsToBarBeat(timeBeats, clipInfo.timeSigNumerator, clipInfo.timeSigDenominator)}:${round(value)}`)
     });
   }
-  const points = buildWritePoints(args, clipInfo);
+  const anchors = args.recipe == null ? await resolveAnchorValues(bridge, clipInfo, target, args) : void 0;
+  const points = buildWritePoints(args, clipInfo, anchors);
   return formatSuccessResponse(await bridge.automationWrite({
     clip: clipInfo.ref,
     target: target,
     points: points,
-    clearFirst: args.clear === true
+    clearFirst: args.clear === true,
+    echo: anchors?.map(([, value]) => value)
   }));
+}
+
+async function resolveAnchorValues(bridge, clipInfo, target, args) {
+  if (args.points == null) {
+    throw new Error("points (or recipe) is required for write");
+  }
+  const parsed = parsePoints(args.points);
+  const displays = parsed.map(point => point.value).filter(value => typeof value === "string");
+  const mapped = displays.length > 0 ? await bridge.send("automation_values", {
+    clip: clipInfo.ref,
+    target: target,
+    displays: displays
+  }, AUTOMATION_VALUES_TIMEOUT_MS) : [];
+  let next = 0;
+  return parsed.map(({barBeat: barBeat, value: value}) => [ barBeatToAbletonBeats(barBeat, clipInfo.timeSigNumerator, clipInfo.timeSigDenominator), typeof value === "string" ? mapped[next++] : value ]);
 }
 
 async function resolveClipInfo(next, args) {
@@ -31745,7 +31787,7 @@ async function resolveClipInfo(next, args) {
   if (payload.id == null) {
     throw new Error(`no clip at slot ${args.slot}`);
   }
-  const [timeSigNumerator, timeSigDenominator] = parseTimeSignature(payload.timeSignature);
+  const [timeSigNumerator, timeSigDenominator] = parseTimeSignature$1(payload.timeSignature);
   const ref = resolveClipRef(payload);
   return {
     ref: ref,
@@ -31833,14 +31875,10 @@ function defaultTargetForRecipe(recipe) {
   throw new Error("paramName is required (or devicePath + paramName)");
 }
 
-function buildWritePoints(args, clipInfo) {
-  if (args.recipe != null) {
+function buildWritePoints(args, clipInfo, anchors) {
+  if (args.recipe != null || anchors == null) {
     return generateRecipePoints(args.recipe, clipInfo.startBeats, clipInfo.endBeats, timeSigToAbletonBeatsPerBar(clipInfo.timeSigNumerator, clipInfo.timeSigDenominator));
   }
-  if (args.points == null) {
-    throw new Error("points (or recipe) is required for write");
-  }
-  const anchors = parsePoints(args.points).map(({barBeat: barBeat, value: value}) => [ barBeatToAbletonBeats(barBeat, clipInfo.timeSigNumerator, clipInfo.timeSigDenominator), value ]);
   for (let i = 1; i < anchors.length; i++) {
     const current = anchors[i];
     const previous = anchors[i - 1];
@@ -31851,7 +31889,7 @@ function buildWritePoints(args, clipInfo) {
   return densify(anchors, args.shape ?? "linear");
 }
 
-function parseTimeSignature(timeSignature) {
+function parseTimeSignature$1(timeSignature) {
   if (timeSignature == null) return [ 4, 4 ];
   const match = /^(\d+)\/(\d+)$/.exec(timeSignature);
   if (!match) {
@@ -31875,13 +31913,105 @@ function round(value) {
   return Math.round(value * 1e3) / 1e3;
 }
 
+function parseTimeSignature(timeSignature) {
+  const match = timeSignature.match(/^(\d+)\/(\d+)$/);
+  if (!match) {
+    throw new Error('Time signature must be in format "n/m" (e.g. "4/4")');
+  }
+  return {
+    numerator: Number.parseInt(match[1]),
+    denominator: Number.parseInt(match[2])
+  };
+}
+
+const NEW_TRACK_POLL_MS = 250;
+
+const NEW_TRACK_TIMEOUT_MS = 15e3;
+
+const CONVERT_TIMEOUT_MS = 3e4;
+
+const TRACK_IDS_TIMEOUT_MS = 1500;
+
+async function handleConvertClip(bridge, next, args, wait = {}) {
+  if (args.fromClip == null) {
+    return formatErrorResponse("createTrack failed: convert needs fromClip (a clip id or session slot like '0/3')");
+  }
+  if (!await bridge.ensureAlive()) {
+    return formatErrorResponse(INSTALL_HINT);
+  }
+  const readArgs = args.fromClip.includes("/") ? {
+    slot: args.fromClip
+  } : {
+    clipId: args.fromClip
+  };
+  const read = await next("adj-read-clip", readArgs);
+  if (read.isError) return read;
+  try {
+    const clip = parseToolPayload(read);
+    const ref = await clipRef(next, clip, args.fromClip);
+    const {trackIdsBefore: trackIdsBefore} = await bridge.send("convert_clip", {
+      clip: ref,
+      kind: args.convert
+    }, CONVERT_TIMEOUT_MS);
+    const trackIndex = await waitForNewTrack(bridge, trackIdsBefore, wait);
+    return formatSuccessResponse({
+      trackIndex: trackIndex,
+      convert: args.convert,
+      fromClip: args.fromClip
+    });
+  } catch (err) {
+    const reason = err instanceof BridgeCallError ? `[${err.code}] ${err.message}` : err.message;
+    return formatErrorResponse(`createTrack convert failed: ${reason}`);
+  }
+}
+
+async function clipRef(next, clip, fromClip) {
+  if (clip.id == null) {
+    throw new Error(`no clip at ${fromClip}`);
+  }
+  if (clip.type !== "audio") {
+    throw new Error(`only an audio clip can be converted (${fromClip} is ${clip.type})`);
+  }
+  if (clip.view === "arrangement" && clip.trackIndex != null) {
+    const liveSet = parseToolPayload(await next("adj-read-live-set", {}));
+    const {numerator: numerator, denominator: denominator} = parseTimeSignature(liveSet.timeSignature ?? "4/4");
+    return {
+      trackIndex: clip.trackIndex,
+      arrangementStartBeats: barBeatToAbletonBeats(clip.arrangementStart ?? "1|1", numerator, denominator)
+    };
+  }
+  const [trackIndex, sceneIndex] = (clip.slot ?? "").split("/").map(part => Number.parseInt(part));
+  if (trackIndex == null || sceneIndex == null || Number.isNaN(trackIndex) || Number.isNaN(sceneIndex)) {
+    throw new Error(`could not locate clip ${fromClip}`);
+  }
+  return {
+    trackIndex: trackIndex,
+    sceneIndex: sceneIndex
+  };
+}
+
+async function waitForNewTrack(bridge, before, {pollMs: pollMs = NEW_TRACK_POLL_MS, timeoutMs: timeoutMs = NEW_TRACK_TIMEOUT_MS}) {
+  const known = new Set(before);
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    await new Promise(resolve => setTimeout(resolve, pollMs));
+    const {trackIds: trackIds} = await bridge.send("track_ids", {}, TRACK_IDS_TIMEOUT_MS);
+    const index = trackIds.findIndex(id => !known.has(id));
+    if (index !== -1) return index;
+  }
+  throw new Error("Live started the conversion but no new track appeared; check Live for a dialog or error");
+}
+
 function makeBridgeDispatcher(next, bridge) {
-  return async (tool, args) => {
+  const dispatch = async (tool, args) => {
     if (tool === "adj-browse") {
       return await handleBrowse(bridge, args);
     }
     if (tool === "adj-automate") {
       return await handleAutomate(bridge, next, args);
+    }
+    if (tool === "adj-create-track" && "convert" in args && args.convert) {
+      return await handleConvertClip(bridge, next, args);
     }
     if (tool === "adj-create-device") {
       const cdArgs = args;
@@ -31891,6 +32021,23 @@ function makeBridgeDispatcher(next, bridge) {
     }
     return await next(tool, args);
   };
+  return async (tool, args) => {
+    const result = await dispatch(tool, args);
+    if (!READ_ONLY_TOOLS.has(tool)) {
+      await closeUndoStep(bridge);
+    }
+    return result;
+  };
+}
+
+const READ_ONLY_TOOLS = new Set([ "adj-connect", "adj-browse", "adj-guide", "adj-context", "adj-select", "adj-read-live-set", "adj-read-track", "adj-read-scene", "adj-read-clip", "adj-read-device" ]);
+
+async function closeUndoStep(bridge) {
+  try {
+    if (await bridge.isAliveCached()) {
+      await bridge.endUndoStep();
+    }
+  } catch {}
 }
 
 async function handleBrowse(bridge, args) {
@@ -52501,7 +52648,7 @@ const CATEGORY_VALUES = [ "instruments", "audio_effects", "midi_effects", "drums
 
 const toolDefBrowse = defineTool("adj-browse", {
   title: "Browse",
-  description: "Browse Ableton Live's Library and User Library tree. Returns category roots, folder children, and loadable items with their stable browser URIs. Pair the URI with adj-create-device to load by URI. Requires the Live Browser Bridge — install with `npm run install:bridge`.",
+  description: "Browse Ableton Live's Library and User Library tree. Returns category roots, folder children, and loadable items with their stable browser URIs. Pair the URI with adj-create-device to load by URI. user_folders is Live's Places (your own sample libraries). Requires the Live Browser Bridge — install with `npm run install:bridge`.",
   annotations: {
     readOnlyHint: true,
     destructiveHint: false
@@ -52510,6 +52657,7 @@ const toolDefBrowse = defineTool("adj-browse", {
     category: _enum$2(CATEGORY_VALUES).optional().describe("browser category root to enter; omit to list available categories"),
     path: string$1().optional().describe("slash-separated names walked under the category root (e.g., 'Synths/Operator')"),
     search: string$1().optional().describe("case-insensitive substring filter applied to children"),
+    recursive: boolean().optional().describe("with search: match anywhere under path, not just direct children. Hits carry their folder path, plus bpm/key parsed from sample names (e.g. 'Bass_Loop_124_Fm.wav')"),
     depth: number$1().int().min(1).max(3).optional().describe("how many child levels to expand inline (default 1)"),
     limit: number$1().int().min(1).max(500).optional().describe("maximum number of top-level items to return (default 100)")
   }
@@ -52528,7 +52676,7 @@ const toolDefAutomate = defineTool("adj-automate", {
     slot: string().optional().describe("session clip slot: trackIndex/sceneIndex (e.g., '0/3'). provide this or clipId"),
     devicePath: string$1().optional().describe("device to automate, e.g. 't0/d1' or 't0/d0/c1/d0' for rack chains. Must be on the clip's track. Omit for track mixer params"),
     paramName: string$1().optional().describe("parameter name as shown in Live (case-insensitive). Mixer params (no devicePath): 'Volume', 'Pan', or 'Send A'/'Send B'/..."),
-    points: string$1().optional().describe([ "comma- or newline-separated '<bar|beat>:<value>' pairs, value 0..1.", "'1|1' = clip start. Times must be ascending.", "Example: '1|1:0, 9|1:1, 17|1:0.25'" ].join("\n")),
+    points: string$1().optional().describe([ "comma- or newline-separated '<bar|beat>:<value>' pairs.", "value: 0..1, or the param's display value with a unit (Hz, kHz, dB, %, ms, s), mapped through Live's own labels. Prefer units for filters and volume: 0..1 is not linear in Hz or dB.", "'1|1' = clip start. Times must be ascending. The result's displays shows what Live reads at each point.", "Example: '1|1:200Hz, 9|1:8kHz, 17|1:-6dB'" ].join("\n")),
     shape: _enum$2([ "linear", "exponential", "logarithmic", "sine", "s-curve", "step" ]).optional().describe("interpolation between points (default linear). step = hold each value until the next point"),
     recipe: _enum$2([ "filter-sweep-up", "filter-sweep-down", "volume-fade-in", "volume-fade-out", "dub-throw", "sidechain-pump", "tape-stop", "washout" ]).optional().describe("named move generating points over the clip's play region (overrides points). filter-sweep-up/down + tape-stop require devicePath + paramName. volume-fade-in/out + sidechain-pump default to mixer Volume. dub-throw + washout default to Send A"),
     clear: boolean().optional().describe("on write: wipe this parameter's existing envelope first (default false)")
@@ -52786,7 +52934,7 @@ const toolDefUpdateDevice = defineTool("adj-update-device", {
     path: string$1().optional().describe("comma-separated path(s) (e.g., 't1/d0', 't1/d0/c0', 't1/d0/pC1')"),
     toPath: string$1().optional().describe("move to path (e.g., 't2', 't0/d0/c1', 't0/d0/pD1')"),
     name: string$1().optional().describe("name for all, or comma-separated for each (extras keep existing name, not drum pads)"),
-    params: string$1().optional().describe("name=value per line (display units: enum string, note name, number)"),
+    params: string$1().optional().describe("name=value per line (display units: enum string, note name, number). Simpler (Live 12.4+): sample=/abs/path.wav loads a file, gainDb=-6 sets its gain; on a drum pad/chain path, params go to its Simpler"),
     macroVariation: _enum$2([ "create", "load", "delete", "revert", "randomize" ]).optional().describe("Rack only: create/load/delete/revert variation, or randomize macros. load/delete require macroVariationIndex. create always appends."),
     macroVariationIndex: number().int().min(0).optional().describe("Rack only: variation index for load/delete operations (0-based)"),
     macroCount: number().int().min(0).max(16).optional().describe("Rack only: set visible macro count (0-16)"),
@@ -53045,10 +53193,12 @@ const toolDefCreateTrack = defineTool("adj-create-track", {
     type: _enum$2([ "midi", "audio", "return" ]).default("midi").describe("type"),
     mute: boolean().optional().describe("muted?"),
     solo: boolean().optional().describe("soloed?"),
-    arm: boolean().optional().describe("record armed?")
+    arm: boolean().optional().describe("record armed?"),
+    convert: _enum$2([ "drums", "melody", "harmony", "simpler", "drum-rack" ]).optional().describe("new track from the audio clip in fromClip, using Live's conversions: drums/melody/harmony = MIDI clip of its notes, simpler = sample in a Simpler, drum-rack = slices on Drum Rack pads. Other params are ignored. Needs the bridge"),
+    fromClip: string().optional().describe("with convert: audio clip id, or session slot 'track/scene'")
   },
   smallModelModeConfig: {
-    excludeParams: [ "count", "mute", "solo", "arm" ],
+    excludeParams: [ "count", "mute", "solo", "arm", "convert", "fromClip" ],
     descriptionOverrides: {
       name: "track name",
       color: "#RRGGBB"

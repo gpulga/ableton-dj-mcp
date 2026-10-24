@@ -29726,7 +29726,7 @@ const EMPTY_COMPLETION_RESULT = {
   }
 };
 
-const VERSION = "2.5.0";
+const VERSION = "2.6.0";
 
 function filterSchemaForSmallModel(schema, excludeParams, descriptionOverrides, excludeEnumValues) {
   const hasExclusions = excludeParams && excludeParams.length > 0;
@@ -29817,7 +29817,7 @@ const CATEGORY_VALUES = [ "instruments", "audio_effects", "midi_effects", "drums
 
 const toolDefBrowse = defineTool("adj-browse", {
   title: "Browse",
-  description: "Browse Ableton Live's Library and User Library tree. Returns category roots, folder children, and loadable items with their stable browser URIs. Pair the URI with adj-create-device to load by URI. Requires the Live Browser Bridge — install with `npm run install:bridge`.",
+  description: "Browse Ableton Live's Library and User Library tree. Returns category roots, folder children, and loadable items with their stable browser URIs. Pair the URI with adj-create-device to load by URI. user_folders is Live's Places (your own sample libraries). Requires the Live Browser Bridge — install with `npm run install:bridge`.",
   annotations: {
     readOnlyHint: true,
     destructiveHint: false
@@ -29826,6 +29826,7 @@ const toolDefBrowse = defineTool("adj-browse", {
     category: _enum$2(CATEGORY_VALUES).optional().describe("browser category root to enter; omit to list available categories"),
     path: string$1().optional().describe("slash-separated names walked under the category root (e.g., 'Synths/Operator')"),
     search: string$1().optional().describe("case-insensitive substring filter applied to children"),
+    recursive: boolean().optional().describe("with search: match anywhere under path, not just direct children. Hits carry their folder path, plus bpm/key parsed from sample names (e.g. 'Bass_Loop_124_Fm.wav')"),
     depth: number$1().int().min(1).max(3).optional().describe("how many child levels to expand inline (default 1)"),
     limit: number$1().int().min(1).max(500).optional().describe("maximum number of top-level items to return (default 100)")
   }
@@ -29844,7 +29845,7 @@ const toolDefAutomate = defineTool("adj-automate", {
     slot: string().optional().describe("session clip slot: trackIndex/sceneIndex (e.g., '0/3'). provide this or clipId"),
     devicePath: string$1().optional().describe("device to automate, e.g. 't0/d1' or 't0/d0/c1/d0' for rack chains. Must be on the clip's track. Omit for track mixer params"),
     paramName: string$1().optional().describe("parameter name as shown in Live (case-insensitive). Mixer params (no devicePath): 'Volume', 'Pan', or 'Send A'/'Send B'/..."),
-    points: string$1().optional().describe([ "comma- or newline-separated '<bar|beat>:<value>' pairs, value 0..1.", "'1|1' = clip start. Times must be ascending.", "Example: '1|1:0, 9|1:1, 17|1:0.25'" ].join("\n")),
+    points: string$1().optional().describe([ "comma- or newline-separated '<bar|beat>:<value>' pairs.", "value: 0..1, or the param's display value with a unit (Hz, kHz, dB, %, ms, s), mapped through Live's own labels. Prefer units for filters and volume: 0..1 is not linear in Hz or dB.", "'1|1' = clip start. Times must be ascending. The result's displays shows what Live reads at each point.", "Example: '1|1:200Hz, 9|1:8kHz, 17|1:-6dB'" ].join("\n")),
     shape: _enum$2([ "linear", "exponential", "logarithmic", "sine", "s-curve", "step" ]).optional().describe("interpolation between points (default linear). step = hold each value until the next point"),
     recipe: _enum$2([ "filter-sweep-up", "filter-sweep-down", "volume-fade-in", "volume-fade-out", "dub-throw", "sidechain-pump", "tape-stop", "washout" ]).optional().describe("named move generating points over the clip's play region (overrides points). filter-sweep-up/down + tape-stop require devicePath + paramName. volume-fade-in/out + sidechain-pump default to mixer Volume. dub-throw + washout default to Send A"),
     clear: boolean().optional().describe("on write: wipe this parameter's existing envelope first (default false)")
@@ -30102,7 +30103,7 @@ const toolDefUpdateDevice = defineTool("adj-update-device", {
     path: string$1().optional().describe("comma-separated path(s) (e.g., 't1/d0', 't1/d0/c0', 't1/d0/pC1')"),
     toPath: string$1().optional().describe("move to path (e.g., 't2', 't0/d0/c1', 't0/d0/pD1')"),
     name: string$1().optional().describe("name for all, or comma-separated for each (extras keep existing name, not drum pads)"),
-    params: string$1().optional().describe("name=value per line (display units: enum string, note name, number)"),
+    params: string$1().optional().describe("name=value per line (display units: enum string, note name, number). Simpler (Live 12.4+): sample=/abs/path.wav loads a file, gainDb=-6 sets its gain; on a drum pad/chain path, params go to its Simpler"),
     macroVariation: _enum$2([ "create", "load", "delete", "revert", "randomize" ]).optional().describe("Rack only: create/load/delete/revert variation, or randomize macros. load/delete require macroVariationIndex. create always appends."),
     macroVariationIndex: number().int().min(0).optional().describe("Rack only: variation index for load/delete operations (0-based)"),
     macroCount: number().int().min(0).max(16).optional().describe("Rack only: set visible macro count (0-16)"),
@@ -30361,10 +30362,12 @@ const toolDefCreateTrack = defineTool("adj-create-track", {
     type: _enum$2([ "midi", "audio", "return" ]).default("midi").describe("type"),
     mute: boolean().optional().describe("muted?"),
     solo: boolean().optional().describe("soloed?"),
-    arm: boolean().optional().describe("record armed?")
+    arm: boolean().optional().describe("record armed?"),
+    convert: _enum$2([ "drums", "melody", "harmony", "simpler", "drum-rack" ]).optional().describe("new track from the audio clip in fromClip, using Live's conversions: drums/melody/harmony = MIDI clip of its notes, simpler = sample in a Simpler, drum-rack = slices on Drum Rack pads. Other params are ignored. Needs the bridge"),
+    fromClip: string().optional().describe("with convert: audio clip id, or session slot 'track/scene'")
   },
   smallModelModeConfig: {
-    excludeParams: [ "count", "mute", "solo", "arm" ],
+    excludeParams: [ "count", "mute", "solo", "arm", "convert", "fromClip" ],
     descriptionOverrides: {
       name: "track name",
       color: "#RRGGBB"
