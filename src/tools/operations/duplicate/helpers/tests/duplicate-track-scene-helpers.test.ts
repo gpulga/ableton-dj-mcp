@@ -30,7 +30,6 @@ vi.mock(import("#src/tools/clip/update/update-clip.ts"), () => ({
 }));
 
 // Mock arrangement-tiling helpers
-// @ts-expect-error Vitest mock types are overly strict for partial mocks
 vi.mock(import("#src/tools/shared/arrangement/arrangement-tiling.ts"), () => ({
   assertRepeatFits: vi.fn(),
   clearClipAtDuplicateTarget: vi.fn(),
