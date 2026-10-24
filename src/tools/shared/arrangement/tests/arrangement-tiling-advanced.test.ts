@@ -13,6 +13,7 @@ import {
   setupTrackWithQueuedMethods,
 } from "./arrangement-tiling-test-helpers.ts";
 import {
+  assertRepeatFits,
   createPartialTile,
   MAX_TILES,
   tileClipToRange,
@@ -101,6 +102,17 @@ describe("createPartialTile", () => {
     );
 
     expect(track.call).toHaveBeenCalledTimes(5);
+  });
+});
+
+describe("assertRepeatFits", () => {
+  it("refuses a 1-beat clip stretched to 80 bars before anything is written", () => {
+    expect(() => assertRepeatFits(320, 1)).toThrow(/320 times \(max 64\)/);
+  });
+
+  it("allows exactly MAX_TILES repeats and shortening", () => {
+    expect(() => assertRepeatFits(4 * MAX_TILES, 4)).not.toThrow();
+    expect(() => assertRepeatFits(2, 4)).not.toThrow();
   });
 });
 

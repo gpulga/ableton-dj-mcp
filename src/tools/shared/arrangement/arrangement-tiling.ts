@@ -240,10 +240,25 @@ export function tileClipToRange(
  * @param tileCount - Clips the lengthening would create
  * @param tileLength - Beats per clip
  */
-function assertTileCount(tileCount: number, tileLength: number): void {
+export function assertTileCount(tileCount: number, tileLength: number): void {
   if (tileCount > MAX_TILES) {
     throw new Error(
       `lengthening would repeat this ${tileLength}-beat clip ${tileCount} times (max ${MAX_TILES}): the Live API can't stretch an arrangement clip, only repeat it. Use a longer source clip (e.g. a loop of whole bars) or a shorter arrangementLength`,
     );
+  }
+}
+
+/**
+ * Refuse, before anything is written, a lengthening that would repeat a clip
+ * more than MAX_TILES times
+ * @param totalLength - Target length in beats
+ * @param clipLength - Beats per repeat
+ */
+export function assertRepeatFits(
+  totalLength: number,
+  clipLength: number,
+): void {
+  if (clipLength > 0 && totalLength > clipLength) {
+    assertTileCount(Math.ceil(totalLength / clipLength - 0.001), clipLength);
   }
 }

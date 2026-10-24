@@ -16,6 +16,7 @@ import {
   clearClipAtDuplicateTarget,
   moveClipFromHolding,
 } from "#src/tools/shared/arrangement/arrangement-tiling-workaround.ts";
+import { assertRepeatFits } from "#src/tools/shared/arrangement/arrangement-tiling.ts";
 import {
   snapshotArrangementTrack,
   warnArrangementWriteEffects,
@@ -167,6 +168,9 @@ export async function createClipsForLength(
   const sourceClipLength = sourceClip.getProperty("length") as number;
   const isMidiClip = sourceClip.getProperty("is_midi_clip") === 1;
   const duplicatedClips: MinimalClipInfo[] = [];
+
+  // Refuse a runaway repeat before the first copy lands, not after
+  assertRepeatFits(arrangementLengthBeats, sourceClipLength);
 
   if (arrangementLengthBeats < sourceClipLength) {
     // Case 1: Shortening - use holding area approach (preserves clip data including envelopes)
