@@ -39,6 +39,7 @@ export type BridgeErrorCode =
   | "MAIN_THREAD_ERROR"
   | "BROWSER_API_FAILED"
   | "AUTOMATION_FAILED"
+  | "CONVERSION_FAILED"
   | "INVALID_ARGS"
   | "TIMEOUT_INTERNAL"
   | "REPLY_TOO_LARGE"
@@ -77,6 +78,8 @@ interface BridgeRequest {
     | "automation_read"
     | "automation_clear"
     | "end_undo_step"
+    | "convert_clip"
+    | "track_ids"
     | "shutdown";
   args: Record<string, unknown>;
 }
@@ -102,6 +105,9 @@ export type {
   BrowseArgs,
   BrowseItem,
   BrowseResult,
+  ConvertClipArgs,
+  ConvertClipResult,
+  ConvertKind,
   LoadItemArgs,
   LoadItemResult,
 } from "./bridge-types.ts";
@@ -303,7 +309,15 @@ export class BrowserBridgeClient {
     }
   }
 
-  private async send<T>(
+  /**
+   * Send one op and wait for its reply. The typed methods above wrap the
+   * common ops; feature handlers call rarer ops through this directly.
+   * @param op - Bridge op
+   * @param args - Op arguments
+   * @param timeoutMs - Operation timeout in milliseconds
+   * @returns The op's result
+   */
+  async send<T>(
     op: BridgeRequest["op"],
     args: Record<string, unknown>,
     timeoutMs: number,
