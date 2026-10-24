@@ -52,9 +52,10 @@ export const toolDefAutomate = defineTool("adj-automate", {
       .optional()
       .describe(
         [
-          "comma- or newline-separated '<bar|beat>:<value>' pairs, value 0..1.",
-          "'1|1' = clip start. Times must be ascending.",
-          "Example: '1|1:0, 9|1:1, 17|1:0.25'",
+          "comma- or newline-separated '<bar|beat>:<value>' pairs.",
+          "value: 0..1, or the param's display value with a unit (Hz, kHz, dB, %, ms, s), mapped through Live's own labels. Prefer units for filters and volume: 0..1 is not linear in Hz or dB.",
+          "'1|1' = clip start. Times must be ascending. The result's displays shows what Live reads at each point.",
+          "Example: '1|1:200Hz, 9|1:8kHz, 17|1:-6dB'",
         ].join("\n"),
       ),
     shape: z

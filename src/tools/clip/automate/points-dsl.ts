@@ -3,16 +3,22 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // Parser for the adj-automate points string: comma- or newline-separated
-// "<bar|beat>:<value>" pairs, value normalized 0..1. "1|1" is clip time 0.
+// "<bar|beat>:<value>" pairs. "1|1" is clip time 0. A value is normalized 0..1,
+// or a display value with a unit ("1200Hz", "1.2kHz", "-12dB", "25%", "250ms")
+// that the bridge maps onto the param through Live's own labels.
 
 import { MAX_AUTOMATION_POINTS } from "./shapes.ts";
 
 export interface ParsedPoint {
   barBeat: string;
-  value: number;
+  /** Normalized 0..1, or a display value with a unit for the bridge to map */
+  value: number | string;
 }
 
-const POINT_PATTERN = /^(\S+)\s*:\s*([\d.]+)$/;
+const POINT_PATTERN = /^(\S+?)\s*:\s*(\S.*)$/;
+const NORMALIZED_PATTERN = /^[\d.]+$/;
+const DISPLAY_PATTERN =
+  /^-?(?:\d+(?:\.\d*)?|\.\d+|inf)\s*(?:khz|hz|db|%|ms|s)$/i;
 
 /**
  * Parse the points DSL into barBeat/value pairs.
@@ -55,7 +61,7 @@ function parseEntry(entry: string): ParsedPoint {
   }
 
   const barBeat = match[1] as string;
-  const value = Number.parseFloat(match[2] as string);
+  const raw = (match[2] as string).trim();
 
   if (!barBeat.includes("|")) {
     throw new Error(
@@ -63,8 +69,21 @@ function parseEntry(entry: string): ParsedPoint {
     );
   }
 
-  if (Number.isNaN(value) || value < 0 || value > 1) {
-    throw new Error(`invalid point "${entry}" — value must be between 0 and 1`);
+  if (DISPLAY_PATTERN.test(raw)) {
+    return { barBeat, value: raw.replaceAll(/\s+/g, "") };
+  }
+
+  const value = Number.parseFloat(raw);
+
+  if (
+    !NORMALIZED_PATTERN.test(raw) ||
+    Number.isNaN(value) ||
+    value < 0 ||
+    value > 1
+  ) {
+    throw new Error(
+      `invalid point "${entry}" — value must be 0..1 or a value with a unit like '1200Hz', '-12dB', '25%'`,
+    );
   }
 
   return { barBeat, value };

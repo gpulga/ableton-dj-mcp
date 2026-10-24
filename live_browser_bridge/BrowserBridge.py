@@ -8,7 +8,9 @@ main thread.
 Wire-protocol:
 
     Request:  {"id": "...", "op": "ping|browse|load_item|automation_write|
-               automation_read|automation_clear|shutdown", "args": {...}}
+               automation_read|automation_clear|automation_values|end_undo_step|
+               shutdown",
+               "args": {...}}
     Reply OK: {"id": "...", "ok": true,  "result": {...}}
     Reply NO: {"id": "...", "ok": false, "error": {"code": "...", "message": "..."}}
 
@@ -182,6 +184,8 @@ class BrowserBridge(ControlSurface):
                 return self._ok(req_id, self._op_automation_clear(args))
             if op == "end_undo_step":
                 return self._ok(req_id, self._op_end_undo_step())
+            if op == "automation_values":
+                return self._ok(req_id, self._op_automation_values(args))
             if op == "shutdown":
                 # Best-effort; Live restart is the canonical way to stop us.
                 return self._ok(req_id, {"acknowledged": True})
@@ -275,12 +279,16 @@ class BrowserBridge(ControlSurface):
             raise automation_ops.AutomationOpError(
                 "target is required for automation_write"
             )
-        return automation_ops.write_points(
+        result = automation_ops.write_points(
             clip,
             param,
             args.get("points") or [],
             clear_first=bool(args.get("clearFirst")),
         )
+        echo = args.get("echo")
+        if echo:
+            result["displays"] = automation_ops.displays_for(param, echo)
+        return result
 
     def _op_automation_read(self, args):
         clip, param = self._resolve_clip_and_param(args)
@@ -294,6 +302,17 @@ class BrowserBridge(ControlSurface):
             step_beats=args.get("stepBeats"),
             max_points=args.get("maxPoints"),
         )
+
+    def _op_automation_values(self, args):
+        _clip, param = self._resolve_clip_and_param(args)
+        if param is None:
+            raise automation_ops.AutomationOpError(
+                "target is required for automation_values"
+            )
+        return [
+            automation_ops.display_to_normalized(param, text)
+            for text in args.get("displays") or []
+        ]
 
     def _op_automation_clear(self, args):
         clip, param = self._resolve_clip_and_param(args)

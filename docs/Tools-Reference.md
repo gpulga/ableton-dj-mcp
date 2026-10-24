@@ -149,9 +149,9 @@ calls.
 
 Write, read, or clear parameter automation envelopes inside a session clip.
 Arrangement clips are rejected — Live's envelope API raises "Not a session clip"
-even from Python. Values are normalized 0..1 across the parameter's range.
-Requires the Live Browser Bridge (`npm run install:bridge`) — the clip envelope
-API is Python-only (see
+even from Python. Values are normalized 0..1 across the parameter's range, or
+display values with a unit (see `points`). Requires the Live Browser Bridge
+(`npm run install:bridge`) — the clip envelope API is Python-only (see
 `docs/findings/dev/device/clip-envelope-api-python-only.md`).
 
 - `action`: `"write"` (default) | `"read"` | `"clear"` | `"clear-all"`
@@ -161,7 +161,13 @@ API is Python-only (see
 - `paramName` — parameter name as shown in Live (case-insensitive). Mixer
   params: `"Volume"`, `"Pan"`, `"Send A"`..`"Send L"`
 - `points` — `'<bar|beat>:<value>'` pairs, comma- or newline-separated
-  (`"1|1:0, 9|1:1"`); `"1|1"` = clip start; times ascending
+  (`"1|1:0, 9|1:1"`); `"1|1"` = clip start; times ascending. A value is 0..1 or
+  the param's display value with a unit: `Hz`, `kHz`, `dB`, `%`, `ms`, `s`
+  (`"1|1:200Hz, 9|1:8kHz"`). Units are mapped through Live's own value labels,
+  so a log filter or a dB fader lands where the label says (0..1 does not: 0.05
+  on a 20 Hz–20 kHz filter is ~28 Hz, not 1 kHz). Values outside the param's
+  range clamp. The write result's `displays` lists what Live shows at each given
+  point.
 - `shape` — interpolation between points: `linear` (default), `exponential`,
   `logarithmic`, `sine`, `s-curve`, `step` (hold values)
 - `recipe` — named move generating points over the clip's play region (overrides

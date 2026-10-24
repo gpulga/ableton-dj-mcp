@@ -41,7 +41,23 @@ describe("parsePoints", () => {
   });
 
   it("rejects values above 1", () => {
-    expect(() => parsePoints("1|1:1.5")).toThrow(/between 0 and 1/);
+    expect(() => parsePoints("1|1:1.5")).toThrow(/must be 0\.\.1 or a value/);
+  });
+
+  it("keeps display values with units for the bridge to map", () => {
+    expect(
+      parsePoints("1|1:1200Hz, 5|1:1.2 kHz, 9|1:-12dB, 13|1:25%, 17|1:250ms"),
+    ).toStrictEqual([
+      { barBeat: "1|1", value: "1200Hz" },
+      { barBeat: "5|1", value: "1.2kHz" },
+      { barBeat: "9|1", value: "-12dB" },
+      { barBeat: "13|1", value: "25%" },
+      { barBeat: "17|1", value: "250ms" },
+    ]);
+  });
+
+  it("rejects a negative value without a unit", () => {
+    expect(() => parsePoints("1|1:-12")).toThrow(/invalid point/);
   });
 
   it("rejects non-numeric values", () => {
