@@ -2,6 +2,8 @@
 // Copyright (C) 2026 Gabriel Pulga
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+// Request/response shapes for the Live Browser Bridge ops.
+
 // Arg/result shapes for the bridge automation_* ops (adj-automate). Beat
 // values are Ableton beats relative to clip time 0; values are normalized
 // 0..1 (denormalized onto param.min..param.max Python-side).
@@ -65,4 +67,41 @@ export interface AutomationClearArgs {
 
 export interface AutomationClearResult {
   cleared: "param" | "all";
+}
+
+export interface BrowseArgs {
+  category?: string;
+  path?: string;
+  search?: string;
+  depth?: number;
+  limit?: number;
+}
+
+export interface BrowseItem {
+  name: string;
+  uri: string;
+  isFolder: boolean;
+  isDevice: boolean;
+  isLoadable: boolean;
+  children?: BrowseItem[];
+}
+
+export interface BrowseResult {
+  category?: string;
+  categories?: string[];
+  path?: string;
+  items: BrowseItem[];
+  truncated?: boolean;
+}
+
+export interface LoadItemArgs {
+  uri: string;
+  category?: string;
+}
+
+export interface LoadItemResult {
+  loaded: boolean;
+  deviceId: string | null;
+  deviceCountBefore: number;
+  deviceCountAfter: number;
 }

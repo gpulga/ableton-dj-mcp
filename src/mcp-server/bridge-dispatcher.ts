@@ -43,7 +43,7 @@ export function makeBridgeDispatcher(
   next: CallLiveApiFunction,
   bridge: BrowserBridgeClient,
 ): CallLiveApiFunction {
-  return async (tool: string, args: object): Promise<object> => {
+  const dispatch = async (tool: string, args: object): Promise<object> => {
     if (tool === "adj-browse") {
       return await handleBrowse(bridge, args);
     }
@@ -62,6 +62,46 @@ export function makeBridgeDispatcher(
 
     return await next(tool, args);
   };
+
+  return async (tool: string, args: object): Promise<object> => {
+    const result = await dispatch(tool, args);
+
+    if (!READ_ONLY_TOOLS.has(tool)) {
+      await closeUndoStep(bridge);
+    }
+
+    return result;
+  };
+}
+
+// Tools that never change the Live Set, so they don't close an undo step
+const READ_ONLY_TOOLS = new Set([
+  "adj-connect",
+  "adj-browse",
+  "adj-guide",
+  "adj-context",
+  "adj-select",
+  "adj-read-live-set",
+  "adj-read-track",
+  "adj-read-scene",
+  "adj-read-clip",
+  "adj-read-device",
+]);
+
+/**
+ * Make the tool call just finished one undo step. Live merges every change
+ * since the last closed step, so without this Cmd/Ctrl+Z undoes everything
+ * since the user last touched Live. Needs the bridge; a no-op without it.
+ * @param bridge - Browser bridge client
+ */
+async function closeUndoStep(bridge: BrowserBridgeClient): Promise<void> {
+  try {
+    if (await bridge.isAliveCached()) {
+      await bridge.endUndoStep();
+    }
+  } catch {
+    // Undo grouping is best-effort; never fail the tool call over it
+  }
 }
 
 async function handleBrowse(

@@ -180,6 +180,8 @@ class BrowserBridge(ControlSurface):
                 return self._ok(req_id, self._op_automation_read(args))
             if op == "automation_clear":
                 return self._ok(req_id, self._op_automation_clear(args))
+            if op == "end_undo_step":
+                return self._ok(req_id, self._op_end_undo_step())
             if op == "shutdown":
                 # Best-effort; Live restart is the canonical way to stop us.
                 return self._ok(req_id, {"acknowledged": True})
@@ -296,6 +298,13 @@ class BrowserBridge(ControlSurface):
     def _op_automation_clear(self, args):
         clip, param = self._resolve_clip_and_param(args)
         return automation_ops.clear(clip, param)
+
+    def _op_end_undo_step(self):
+        # Live merges every change since the last closed step into one, so
+        # closing a step after each tool call makes Cmd/Ctrl+Z undo exactly
+        # that call. Harmless when nothing changed.
+        self._song().end_undo_step()
+        return {"ok": True}
 
     def _focused_track_device_ids(self):
         try:

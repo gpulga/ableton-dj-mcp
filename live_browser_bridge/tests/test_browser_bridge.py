@@ -193,5 +193,41 @@ class MainThreadPollTest(unittest.TestCase):
         bridge.update_display()
 
 
+class FakeSong(object):
+    def __init__(self):
+        self.closed_steps = 0
+
+    def end_undo_step(self):
+        self.closed_steps += 1
+
+
+class FakeApp(object):
+    def __init__(self, song):
+        self._song = song
+
+    def get_document(self):
+        return self._song
+
+
+class EndUndoStepTest(unittest.TestCase):
+    def test_closes_the_pending_undo_step(self):
+        song = FakeSong()
+        bridge = _make_bridge(None)
+        bridge.application = lambda: FakeApp(song)
+
+        reply = bridge._handle_request({"id": "u1", "op": "end_undo_step"})
+
+        self.assertTrue(reply["ok"])
+        self.assertEqual(song.closed_steps, 1)
+
+    def test_reports_a_missing_document(self):
+        bridge = _make_bridge(None)
+        bridge.application = lambda: FakeApp(None)
+
+        reply = bridge._handle_request({"id": "u2", "op": "end_undo_step"})
+
+        self.assertEqual(reply["error"]["code"], "AUTOMATION_FAILED")
+
+
 if __name__ == "__main__":
     unittest.main()
