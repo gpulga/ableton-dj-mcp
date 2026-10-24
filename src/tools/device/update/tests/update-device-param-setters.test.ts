@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 import { beforeEach, describe, expect, it } from "vitest";
-import { MockSequence } from "#src/test/mocks/mock-live-api-property-helpers.ts";
 import {
   type RegisteredMockObject,
   children,
@@ -522,23 +521,13 @@ describe("updateDevice - param value conversion", () => {
 
 describe("updateDevice - automation override", () => {
   const OVERRIDE_WARNING =
-    "updateDevice: this write overrode automation. Live stops playing automation and clip envelopes on the changed params until re-enabled (adj-playback action re-enable-automation). Finish sound design before automating, or re-enable after";
+    "updateDevice: writing Cutoff overrode its automation. Live stops playing that automation and clip envelope until re-enabled (adj-playback action re-enable-automation). Finish sound design before automating, or re-enable after";
 
   /**
-   * Register live_set with re_enable_automation_enabled reads in order
-   * @param states - Successive values of the flag
+   * Register a device with one Cutoff param in an automation state
+   * @param automationState - 0 none, 1 active, 2 overridden
    */
-  function registerOverrideStates(...states: number[]): void {
-    registerMockObject("live_set", {
-      path: livePath.liveSet,
-      type: "Song",
-      properties: {
-        re_enable_automation_enabled: new MockSequence(...states),
-      },
-    });
-  }
-
-  beforeEach(() => {
+  function registerCutoff(automationState: number): void {
     registerMockObject("dev1", {
       path: livePath.track(0).device(0),
       type: "Device",
@@ -552,29 +541,30 @@ describe("updateDevice - automation override", () => {
         value: 0.5,
         min: 0,
         max: 1,
+        automation_state: automationState,
       },
       methods: { str_for_value: (value: unknown) => String(value) },
     });
-  });
+  }
 
-  it("warns when the write makes Live override automation", () => {
-    registerOverrideStates(0, 1);
+  it("warns when the param's automation is playing", () => {
+    registerCutoff(1);
 
     updateDevice({ ids: "dev1", params: "Cutoff=0.5" });
 
     expect(outlet).toHaveBeenCalledWith(1, OVERRIDE_WARNING);
   });
 
-  it("stays quiet when automation was already overridden", () => {
-    registerOverrideStates(1, 1);
+  it("stays quiet when the automation is already overridden", () => {
+    registerCutoff(2);
 
     updateDevice({ ids: "dev1", params: "Cutoff=0.5" });
 
     expect(outlet).not.toHaveBeenCalledWith(1, OVERRIDE_WARNING);
   });
 
-  it("stays quiet when nothing is overridden", () => {
-    registerOverrideStates(0, 0);
+  it("stays quiet when the param has no automation", () => {
+    registerCutoff(0);
 
     updateDevice({ ids: "dev1", params: "Cutoff=0.5" });
 

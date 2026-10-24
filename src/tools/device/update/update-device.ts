@@ -2,7 +2,6 @@
 // Copyright (C) 2026 Gabriel Pulga
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-import { livePath } from "#src/shared/live-api-path-builders.ts";
 import { noteNameToMidi } from "#src/shared/pitch.ts";
 import * as console from "#src/shared/v8-max-console.ts";
 import { select } from "#src/tools/control/select.ts";
@@ -122,7 +121,6 @@ export function updateDevice(
 ): Record<string, unknown> | Record<string, unknown>[] | null {
   validateExclusiveParams(ids, path, "ids", "path");
 
-  const wasOverridden = params != null && isAutomationOverridden();
   let result: Record<string, unknown> | Record<string, unknown>[] | null;
 
   if (wrapInRack) {
@@ -162,12 +160,6 @@ export function updateDevice(
     );
   }
 
-  if (params != null && !wasOverridden && isAutomationOverridden()) {
-    console.warn(
-      "updateDevice: this write overrode automation. Live stops playing automation and clip envelopes on the changed params until re-enabled (adj-playback action re-enable-automation). Finish sound design before automating, or re-enable after",
-    );
-  }
-
   if (focus && result != null) {
     const lastResult = Array.isArray(result) ? result.at(-1) : result;
     const lastId = lastResult?.id as string | undefined;
@@ -178,18 +170,6 @@ export function updateDevice(
   }
 
   return result;
-}
-
-/**
- * @returns Whether Live is overriding automation (its Re-Enable Automation
- *   button is lit)
- */
-function isAutomationOverridden(): boolean {
-  return (
-    (LiveAPI.from(livePath.liveSet).getProperty(
-      "re_enable_automation_enabled",
-    ) as number) > 0
-  );
 }
 
 /**
