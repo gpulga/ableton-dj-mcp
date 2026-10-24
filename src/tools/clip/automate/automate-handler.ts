@@ -69,6 +69,8 @@ interface ReadClipPayload {
   end?: string;
 }
 
+const AUTOMATION_VALUES_TIMEOUT_MS = 10_000;
+
 const STALE_BRIDGE_HINT =
   "Bridge is outdated and missing the automation ops. Rerun " +
   "`npm run install:bridge`, restart Live, and re-enable the control surface.";
@@ -151,7 +153,11 @@ async function runAction(
     });
   }
 
-  const points = buildWritePoints(args, clipInfo);
+  const anchors =
+    args.recipe == null
+      ? await resolveAnchorValues(bridge, clipInfo, target, args)
+      : undefined;
+  const points = buildWritePoints(args, clipInfo, anchors);
 
   return formatSuccessResponse(
     await bridge.automationWrite({
@@ -159,8 +165,53 @@ async function runAction(
       target,
       points,
       clearFirst: args.clear === true,
+      // Read back how Live labels the points the caller gave
+      echo: anchors?.map(([, value]) => value),
     }),
   );
+}
+
+/**
+ * The points DSL as anchors with normalized values, mapping display values
+ * ("1200Hz", "-12dB") through the param's own labels on the bridge
+ * @param bridge - UDP client for the Python bridge
+ * @param clipInfo - Resolved clip timing
+ * @param target - Parameter the points are for
+ * @param args - Tool arguments
+ * @returns Anchors in Ableton beats with normalized values
+ */
+async function resolveAnchorValues(
+  bridge: BrowserBridgeClient,
+  clipInfo: ClipInfo,
+  target: AutomationTarget,
+  args: AutomateToolArgs,
+): Promise<BridgePoint[]> {
+  if (args.points == null) {
+    throw new Error("points (or recipe) is required for write");
+  }
+
+  const parsed = parsePoints(args.points);
+  const displays = parsed
+    .map((point) => point.value)
+    .filter((value): value is string => typeof value === "string");
+  const mapped =
+    displays.length > 0
+      ? await bridge.send<number[]>(
+          "automation_values",
+          { clip: clipInfo.ref, target, displays },
+          AUTOMATION_VALUES_TIMEOUT_MS,
+        )
+      : [];
+  let next = 0;
+
+  return parsed.map(({ barBeat, value }) => [
+    barBeatToAbletonBeats(
+      barBeat,
+      clipInfo.timeSigNumerator,
+      clipInfo.timeSigDenominator,
+    ),
+    typeof value === "string" ? (mapped[next++] as number) : value,
+  ]);
 }
 
 /**
@@ -337,18 +388,20 @@ function defaultTargetForRecipe(recipe?: AutomationRecipe): AutomationTarget {
 }
 
 /**
- * Produce the final point run for a write: recipe or points DSL + shape.
+ * Produce the final point run for a write: recipe or points anchors + shape.
  * @param args - Tool arguments
  * @param clipInfo - Resolved clip timing for conversions
+ * @param anchors - Points DSL anchors with normalized values (non-recipe)
  * @returns Points in Ableton beats with normalized values
  */
 function buildWritePoints(
   args: AutomateToolArgs,
   clipInfo: ClipInfo,
+  anchors: BridgePoint[] | undefined,
 ): BridgePoint[] {
-  if (args.recipe != null) {
+  if (args.recipe != null || anchors == null) {
     return generateRecipePoints(
-      args.recipe,
+      args.recipe as AutomationRecipe,
       clipInfo.startBeats,
       clipInfo.endBeats,
       timeSigToAbletonBeatsPerBar(
@@ -357,21 +410,6 @@ function buildWritePoints(
       ),
     );
   }
-
-  if (args.points == null) {
-    throw new Error("points (or recipe) is required for write");
-  }
-
-  const anchors: BridgePoint[] = parsePoints(args.points).map(
-    ({ barBeat, value }) => [
-      barBeatToAbletonBeats(
-        barBeat,
-        clipInfo.timeSigNumerator,
-        clipInfo.timeSigDenominator,
-      ),
-      value,
-    ],
-  );
 
   for (let i = 1; i < anchors.length; i++) {
     const current = anchors[i] as BridgePoint;

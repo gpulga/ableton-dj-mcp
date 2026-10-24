@@ -6,6 +6,7 @@
 object graph mirrors the Song/Track/Clip/DeviceParameter/AutomationEnvelope
 shapes the ops touch."""
 
+import math
 import os
 import sys
 import unittest
@@ -325,6 +326,83 @@ class ClearTest(unittest.TestCase):
         result = automation_ops.clear(clip)
         self.assertEqual(result, {"cleared": "all"})
         self.assertTrue(clip.cleared_all)
+
+
+
+class LabelledParam(object):
+    """A param whose labels follow a mapping, like Live's str_for_value."""
+
+    def __init__(self, label, minimum=0.0, maximum=1.0, name="Frequency"):
+        self.name = name
+        self.min = minimum
+        self.max = maximum
+        self._label = label
+
+    def str_for_value(self, raw):
+        return self._label(raw)
+
+
+def _log_hz(raw):
+    # 20 Hz .. 20 kHz on a log curve, printed the way Live prints it
+    hz = 20.0 * (1000.0 ** raw)
+    return "%.2f kHz" % (hz / 1000.0) if hz >= 1000 else "%.1f Hz" % hz
+
+
+class DisplayValuesTest(unittest.TestCase):
+    def test_parse_display_units(self):
+        self.assertEqual(automation_ops.parse_display("1.20 kHz"), (1200.0, "hz"))
+        self.assertEqual(automation_ops.parse_display("1200Hz"), (1200.0, "hz"))
+        self.assertEqual(automation_ops.parse_display("-12.0 dB"), (-12.0, "db"))
+        self.assertEqual(automation_ops.parse_display("25 %"), (25.0, "%"))
+        self.assertEqual(automation_ops.parse_display("250 ms"), (0.25, "s"))
+        self.assertEqual(automation_ops.parse_display("-inf dB")[0], float("-inf"))
+        self.assertIsNone(automation_ops.parse_display("Off"))
+
+    def test_finds_a_frequency_on_a_log_curve(self):
+        param = LabelledParam(_log_hz)
+
+        value = automation_ops.display_to_normalized(param, "1200Hz")
+
+        # 1200 Hz sits at log(60)/log(1000) of the range, not 0.06
+        self.assertAlmostEqual(value, math.log(60) / math.log(1000), places=2)
+
+    def test_accepts_khz_for_a_hz_param(self):
+        param = LabelledParam(_log_hz)
+
+        self.assertAlmostEqual(
+            automation_ops.display_to_normalized(param, "1.2kHz"),
+            automation_ops.display_to_normalized(param, "1200Hz"),
+            places=3,
+        )
+
+    def test_clamps_outside_the_range(self):
+        param = LabelledParam(_log_hz)
+
+        self.assertEqual(automation_ops.display_to_normalized(param, "5Hz"), 0.0)
+        self.assertEqual(automation_ops.display_to_normalized(param, "50kHz"), 1.0)
+
+    def test_handles_a_falling_mapping(self):
+        param = LabelledParam(lambda raw: "%.1f dB" % (-60.0 * raw), name="Atten")
+
+        self.assertAlmostEqual(
+            automation_ops.display_to_normalized(param, "-15dB"), 0.25, places=2
+        )
+
+    def test_refuses_a_unit_the_param_does_not_show(self):
+        param = LabelledParam(_log_hz)
+
+        with self.assertRaisesRegex(automation_ops.AutomationOpError, "can't be mapped"):
+            automation_ops.display_to_normalized(param, "-6dB")
+
+    def test_refuses_text_without_a_unit(self):
+        with self.assertRaisesRegex(automation_ops.AutomationOpError, "with a unit"):
+            automation_ops.display_to_normalized(LabelledParam(_log_hz), "loud")
+
+    def test_displays_for_reads_back_labels(self):
+        param = LabelledParam(_log_hz)
+
+        self.assertEqual(automation_ops.displays_for(param, [0.0, 1.0]),
+                         ["20.0 Hz", "20.00 kHz"])
 
 
 if __name__ == "__main__":

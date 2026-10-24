@@ -80,6 +80,7 @@ interface BridgeRequest {
     | "end_undo_step"
     | "convert_clip"
     | "track_ids"
+    | "automation_values"
     | "shutdown";
   args: Record<string, unknown>;
 }
@@ -110,9 +111,6 @@ export type {
   ConvertKind,
   LoadItemArgs,
   LoadItemResult,
-} from "./bridge-types.ts";
-
-export type {
   AutomationClearArgs,
   AutomationClearResult,
   AutomationClipRef,

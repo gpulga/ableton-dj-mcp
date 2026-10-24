@@ -32,6 +32,8 @@ export interface AutomationWriteArgs {
   target: AutomationTarget;
   points: Array<[timeBeats: number, value01: number]>;
   clearFirst?: boolean;
+  /** Normalized values to read back as Live displays them */
+  echo?: number[];
 }
 
 export interface AutomationWriteResult {
@@ -41,6 +43,8 @@ export interface AutomationWriteResult {
   paramMax: number;
   envelopeCreated: boolean;
   clipLengthBeats: number;
+  /** Live's labels at each echo value */
+  displays?: string[];
 }
 
 export interface AutomationReadArgs {

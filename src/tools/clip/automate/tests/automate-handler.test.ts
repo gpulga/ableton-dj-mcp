@@ -18,6 +18,7 @@ interface FakeBridge {
   automationWrite: ReturnType<typeof vi.fn>;
   automationRead: ReturnType<typeof vi.fn>;
   automationClear: ReturnType<typeof vi.fn>;
+  send: ReturnType<typeof vi.fn>;
 }
 
 const WRITE_RESULT = {
@@ -36,6 +37,7 @@ function makeBridge(overrides: Partial<FakeBridge> = {}): FakeBridge {
       overrides.automationWrite ?? vi.fn().mockResolvedValue(WRITE_RESULT),
     automationRead: overrides.automationRead ?? vi.fn(),
     automationClear: overrides.automationClear ?? vi.fn(),
+    send: overrides.send ?? vi.fn(),
   };
 }
 
@@ -139,6 +141,57 @@ describe("handleAutomate", () => {
     expect(call.points[0]).toStrictEqual([0, 0]);
     expect(call.points.at(-1)).toStrictEqual([32, 1]);
     expect(call.points).toHaveLength(17);
+  });
+
+  it("maps display values through the bridge and echoes the anchors", async () => {
+    const bridge = makeBridge({
+      send: vi.fn().mockResolvedValue([0.2, 0.6]),
+    });
+
+    await handleAutomate(asBridge(bridge), makeNext(), {
+      slot: "0/3",
+      devicePath: "t0/d1",
+      paramName: "Frequency",
+      points: "1|1:200Hz, 5|1:0.5, 9|1:1.2kHz",
+    });
+
+    expect(bridge.send).toHaveBeenCalledWith(
+      "automation_values",
+      {
+        clip: { trackIndex: 0, sceneIndex: 3 },
+        target: {
+          kind: "device",
+          chain: [{ type: "d", index: 1 }],
+          paramName: "Frequency",
+        },
+        displays: ["200Hz", "1.2kHz"],
+      },
+      10_000,
+    );
+
+    const call = bridge.automationWrite.mock.calls[0]?.[0] as {
+      points: AutomationPoint[];
+      echo: number[];
+    };
+
+    expect(call.echo).toStrictEqual([0.2, 0.5, 0.6]);
+    expect(call.points[0]).toStrictEqual([0, 0.2]);
+    expect(call.points.at(-1)).toStrictEqual([32, 0.6]);
+  });
+
+  it("skips the bridge lookup when every value is normalized", async () => {
+    const bridge = makeBridge();
+
+    await handleAutomate(asBridge(bridge), makeNext(), {
+      slot: "0/3",
+      paramName: "Volume",
+      points: "1|1:0, 9|1:1",
+    });
+
+    expect(bridge.send).not.toHaveBeenCalled();
+    expect(
+      (bridge.automationWrite.mock.calls[0]?.[0] as { echo: number[] }).echo,
+    ).toStrictEqual([0, 1]);
   });
 
   it("passes clipId through and honors the clear flag", async () => {
