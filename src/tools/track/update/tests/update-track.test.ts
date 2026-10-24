@@ -42,6 +42,41 @@ describe("updateTrack", () => {
     expect(result).toStrictEqual({ id: "123" });
   });
 
+  it("arms after routing and monitoring, which can disarm the track", async () => {
+    const armed = registerMockObject("321", {
+      path: livePath.track(3),
+      properties: { arm: 1 },
+    });
+
+    await updateTrack({
+      ids: "321",
+      monitoringState: "off",
+      arm: true,
+    });
+
+    const props = armed.set.mock.calls.map((call: unknown[]) => call[0]);
+
+    expect(props.at(-1)).toBe("arm");
+    expect(props.indexOf("current_monitoring_state")).toBeLessThan(
+      props.indexOf("arm"),
+    );
+    expect(outlet).not.toHaveBeenCalledWith(1, expect.stringContaining("arm"));
+  });
+
+  it("warns when arm doesn't stick", async () => {
+    registerMockObject("322", {
+      path: livePath.track(4),
+      properties: { arm: 0 },
+    });
+
+    await updateTrack({ ids: "322", arm: true });
+
+    expect(outlet).toHaveBeenCalledWith(
+      1,
+      "updateTrack: arm true did not stick on track 322 (check the track can be armed and has an input)",
+    );
+  });
+
   it("should update multiple tracks by comma-separated IDs", async () => {
     const result = await updateTrack({
       ids: "123, 456",
