@@ -229,9 +229,9 @@ Requires the Live Browser Bridge Python sidecar — install with
 
 Update device parameters by name or index.
 
-- Writing a param that has automation or a clip envelope makes Live override it
-  (Live's Re-Enable Automation button lights up) and the automation stops
-  playing. The call warns when that happens; `adj-read-live-set` shows
+- Writing a param whose automation or clip envelope is playing makes Live
+  override it (Live's Re-Enable Automation button lights up) and the automation
+  stops playing. The call warns when that happens; `adj-read-live-set` shows
   `automationOverridden: true` until `adj-playback` `re-enable-automation`.
 
 - `params` — `name=value` per line, in display units (`Filter Freq=1200`)
