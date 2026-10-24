@@ -70,6 +70,12 @@ export function readLiveSet(
     result.sceneCount = sceneIds.length;
   }
 
+  // Only include when true: automation and clip envelopes are overridden by a
+  // manual or tool change and won't play until re-enabled
+  if ((liveSet.getProperty("re_enable_automation_enabled") as number) > 0) {
+    result.automationOverridden = true;
+  }
+
   // Only include isPlaying when true
   const isPlaying = (liveSet.getProperty("is_playing") as number) > 0;
 

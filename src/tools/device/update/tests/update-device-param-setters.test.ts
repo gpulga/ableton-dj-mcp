@@ -518,3 +518,56 @@ describe("updateDevice - param value conversion", () => {
     });
   });
 });
+
+describe("updateDevice - automation override", () => {
+  const OVERRIDE_WARNING =
+    "updateDevice: writing Cutoff overrode its automation. Live stops playing that automation and clip envelope until re-enabled (adj-playback action re-enable-automation). Finish sound design before automating, or re-enable after";
+
+  /**
+   * Register a device with one Cutoff param in an automation state
+   * @param automationState - 0 none, 1 active, 2 overridden
+   */
+  function registerCutoff(automationState: number): void {
+    registerMockObject("dev1", {
+      path: livePath.track(0).device(0),
+      type: "Device",
+      properties: { parameters: children("p1") },
+    });
+    registerMockObject("p1", {
+      properties: {
+        name: "Cutoff",
+        original_name: "Cutoff",
+        is_quantized: 0,
+        value: 0.5,
+        min: 0,
+        max: 1,
+        automation_state: automationState,
+      },
+      methods: { str_for_value: (value: unknown) => String(value) },
+    });
+  }
+
+  it("warns when the param's automation is playing", () => {
+    registerCutoff(1);
+
+    updateDevice({ ids: "dev1", params: "Cutoff=0.5" });
+
+    expect(outlet).toHaveBeenCalledWith(1, OVERRIDE_WARNING);
+  });
+
+  it("stays quiet when the automation is already overridden", () => {
+    registerCutoff(2);
+
+    updateDevice({ ids: "dev1", params: "Cutoff=0.5" });
+
+    expect(outlet).not.toHaveBeenCalledWith(1, OVERRIDE_WARNING);
+  });
+
+  it("stays quiet when the param has no automation", () => {
+    registerCutoff(0);
+
+    updateDevice({ ids: "dev1", params: "Cutoff=0.5" });
+
+    expect(outlet).not.toHaveBeenCalledWith(1, OVERRIDE_WARNING);
+  });
+});

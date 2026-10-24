@@ -17,6 +17,8 @@ import {
 import { parseParamLines } from "./update-device-param-parser.ts";
 
 const BINARY_SEARCH_ITERATIONS = 40;
+/** DeviceParameter.automation_state: 0 none, 1 active, 2 overridden */
+const AUTOMATION_ACTIVE = 1;
 
 /**
  * Set parameter values from name=value lines
@@ -25,6 +27,7 @@ const BINARY_SEARCH_ITERATIONS = 40;
  */
 export function setParamValues(device: LiveAPI, paramsInput: string): void {
   const paramEntries = parseParamLines(paramsInput);
+  const overridden: string[] = [];
 
   // The sample loads first so a gainDb in the same call applies to it
   const sampleEntries = paramEntries.filter(
@@ -59,7 +62,20 @@ export function setParamValues(device: LiveAPI, paramsInput: string): void {
       continue;
     }
 
+    // Writing a param whose automation is playing makes Live override it
+    if (
+      (param.getProperty("automation_state") as number) === AUTOMATION_ACTIVE
+    ) {
+      overridden.push(param.getProperty("name") as string);
+    }
+
     setParamValue(param, inputValue);
+  }
+
+  if (overridden.length > 0) {
+    console.warn(
+      `updateDevice: writing ${overridden.join(", ")} overrode its automation. Live stops playing that automation and clip envelope until re-enabled (adj-playback action re-enable-automation). Finish sound design before automating, or re-enable after`,
+    );
   }
 }
 
