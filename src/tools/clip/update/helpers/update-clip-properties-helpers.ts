@@ -2,6 +2,8 @@
 // Copyright (C) 2026 Gabriel Pulga
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+import { endMovesFirst } from "#src/tools/clip/helpers/clip-region-order.ts";
+
 export interface ClipPropsToSet {
   name?: string;
   color?: string;
@@ -17,43 +19,51 @@ export interface ClipPropsToSet {
   [key: string]: string | number | boolean | null | undefined;
 }
 
+interface RegionWrites {
+  start: number | null;
+  end: number | null;
+  startMarker: number | null;
+  writesLoop: boolean;
+  writesEndMarker: boolean;
+  loopEndFirst: boolean;
+  markerEndFirst: boolean;
+}
+
 /**
- * Add loop-related properties in correct order to avoid Live API errors.
- * Order: loop_end (if expanding) -> loop_start -> start_marker -> loop_end (normal)
+ * Add the region properties in an order Live accepts: ends that must move
+ * first, then the starts, then the remaining ends
  * @param propsToSet - Properties object to modify
- * @param setEndFirst - Whether to set loop_end before loop_start
- * @param startBeats - Start position in beats
- * @param endBeats - End position in beats
- * @param startMarkerBeats - Start marker position in beats
- * @param looping - Whether looping is enabled
+ * @param region - What to write and in which order
  */
-function addLoopProperties(
+function addRegionProperties(
   propsToSet: ClipPropsToSet,
-  setEndFirst: boolean,
-  startBeats: number | null,
-  endBeats: number | null,
-  startMarkerBeats: number | null,
-  looping?: boolean,
+  region: RegionWrites,
 ): void {
-  // When expanding (setEndFirst), set loop_end first
-  if (setEndFirst && endBeats != null && looping !== false) {
-    propsToSet.loop_end = endBeats;
+  const { start, end, startMarker, writesLoop, writesEndMarker } = region;
+
+  const addEnds = (first: boolean): void => {
+    if (end == null) return;
+
+    if (writesLoop && region.loopEndFirst === first) {
+      propsToSet.loop_end = end;
+    }
+
+    if (writesEndMarker && region.markerEndFirst === first) {
+      propsToSet.end_marker = end;
+    }
+  };
+
+  addEnds(true);
+
+  if (writesLoop && start != null) {
+    propsToSet.loop_start = start;
   }
 
-  // Set loop_start before start_marker
-  if (startBeats != null && looping !== false) {
-    propsToSet.loop_start = startBeats;
+  if (startMarker != null) {
+    propsToSet.start_marker = startMarker;
   }
 
-  // Set start_marker after loop region is established
-  if (startMarkerBeats != null) {
-    propsToSet.start_marker = startMarkerBeats;
-  }
-
-  // Set loop_end after loop_start in normal case
-  if (!setEndFirst && endBeats != null && looping !== false) {
-    propsToSet.loop_end = endBeats;
-  }
+  addEnds(false);
 }
 
 export interface BuildClipPropertiesArgs {
@@ -68,6 +78,7 @@ export interface BuildClipPropertiesArgs {
   startBeats: number | null;
   endBeats: number | null;
   currentLoopEnd: number | null;
+  currentEndMarker: number | null;
   legato?: boolean;
   muted?: boolean;
 }
@@ -86,6 +97,7 @@ export interface BuildClipPropertiesArgs {
  * @param args.startBeats - Start position in beats
  * @param args.endBeats - End position in beats
  * @param args.currentLoopEnd - Current loop end position in beats
+ * @param args.currentEndMarker - Current end marker position in beats
  * @param args.legato - Clip keeps playing when re-launched during playback
  * @param args.muted - Mute individual clip (distinct from track mute)
  * @returns Properties object ready for clip.setAll()
@@ -102,48 +114,43 @@ export function buildClipPropertiesToSet({
   startBeats,
   endBeats,
   currentLoopEnd,
+  currentEndMarker,
   legato,
   muted,
 }: BuildClipPropertiesArgs): ClipPropsToSet {
-  // Must expand loop_end BEFORE setting loop_start when new start >= old end
-  // (otherwise Live rejects with "Cannot set LoopStart behind LoopEnd")
-  const setEndFirst =
-    isLooping &&
-    startBeats != null &&
-    endBeats != null &&
-    currentLoopEnd != null
-      ? startBeats >= currentLoopEnd
-      : false;
-
   const propsToSet: ClipPropsToSet = {
     name: name,
     color: color,
     signature_numerator: timeSignature != null ? timeSigNumerator : null,
     signature_denominator: timeSignature != null ? timeSigDenominator : null,
-    looping: looping,
-    legato: legato,
-    muted: muted,
   };
 
-  // Set loop properties for looping clips (order matters!)
-  if (isLooping || looping == null) {
-    addLoopProperties(
-      propsToSet,
-      setEndFirst,
-      startBeats,
-      endBeats,
-      startMarkerBeats,
-      looping,
-    );
-  } else if (startMarkerBeats != null) {
-    // Non-looping clip - just set start_marker
-    propsToSet.start_marker = startMarkerBeats;
+  const markerEndFirst = endMovesFirst(startMarkerBeats, currentEndMarker);
+  const region: RegionWrites = {
+    start: startBeats,
+    end: endBeats,
+    startMarker: startMarkerBeats,
+    writesLoop: (isLooping || looping == null) && looping !== false,
+    // A looping clip still moves end_marker when its start_marker is going
+    // past it, or Live drops the start and playback begins at the old spot
+    writesEndMarker: !isLooping || looping === false || markerEndFirst,
+    loopEndFirst: endMovesFirst(startBeats, currentLoopEnd),
+    markerEndFirst,
+  };
+
+  // The loop brace needs looping on, and Live ignores start_marker writes
+  // that depend on the old mode, so turning looping off writes the markers
+  // first and flips after; everything else flips first.
+  if (looping === false) {
+    addRegionProperties(propsToSet, region);
+    propsToSet.looping = false;
+  } else {
+    propsToSet.looping = looping;
+    addRegionProperties(propsToSet, region);
   }
 
-  // Set end_marker for non-looping clips
-  if ((!isLooping || looping === false) && endBeats != null) {
-    propsToSet.end_marker = endBeats;
-  }
+  propsToSet.legato = legato;
+  propsToSet.muted = muted;
 
   return propsToSet;
 }

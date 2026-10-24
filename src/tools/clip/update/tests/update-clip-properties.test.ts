@@ -11,6 +11,10 @@ import {
   setupUpdateClipMocks,
   type UpdateClipMocks,
 } from "#src/tools/clip/update/helpers/update-clip-test-helpers.ts";
+import {
+  type BuildClipPropertiesArgs,
+  buildClipPropertiesToSet,
+} from "#src/tools/clip/update/helpers/update-clip-properties-helpers.ts";
 import { updateClip } from "#src/tools/clip/update/update-clip.ts";
 import "#src/live-api-adapter/live-api-extensions.ts";
 
@@ -318,5 +322,107 @@ describe("updateClip - focus functionality", () => {
     await updateClip({ ids: "123", name: "Test" });
 
     expect(selectMock.get()).not.toHaveBeenCalled();
+  });
+});
+
+describe("buildClipPropertiesToSet - region write order", () => {
+  const base: BuildClipPropertiesArgs = {
+    timeSigNumerator: 4,
+    timeSigDenominator: 4,
+    startMarkerBeats: null,
+    isLooping: true,
+    startBeats: null,
+    endBeats: null,
+    currentLoopEnd: 4,
+    currentEndMarker: 4,
+  };
+
+  /**
+   * Keys of the region properties, in write order
+   * @param args - Overrides for the base args
+   * @returns Region property keys in insertion order
+   */
+  function regionOrder(args: Partial<BuildClipPropertiesArgs>): string[] {
+    const props = buildClipPropertiesToSet({ ...base, ...args });
+
+    return Object.keys(props).filter(
+      (key) =>
+        ["loop_start", "loop_end", "start_marker", "end_marker"].includes(
+          key,
+        ) && props[key] != null,
+    );
+  }
+
+  it("writes starts first when the region stays before the current ends", () => {
+    expect(
+      regionOrder({ startBeats: 1, endBeats: 3, startMarkerBeats: 1 }),
+    ).toStrictEqual(["loop_start", "start_marker", "loop_end"]);
+  });
+
+  it("moves loop_end and end_marker first when the start passes them", () => {
+    const props = buildClipPropertiesToSet({
+      ...base,
+      startBeats: 8,
+      endBeats: 12,
+      startMarkerBeats: 8,
+    });
+
+    expect(
+      regionOrder({ startBeats: 8, endBeats: 12, startMarkerBeats: 8 }),
+    ).toStrictEqual(["loop_end", "end_marker", "loop_start", "start_marker"]);
+    expect(props.end_marker).toBe(12);
+  });
+
+  it("decides each pair on its own when the loop and markers sit apart", () => {
+    expect(
+      regionOrder({
+        startBeats: 8,
+        endBeats: 12,
+        startMarkerBeats: 8,
+        currentLoopEnd: 16,
+        currentEndMarker: 4,
+      }),
+    ).toStrictEqual(["end_marker", "loop_start", "start_marker", "loop_end"]);
+  });
+
+  it("orders a non-looping clip's markers by where its end is now", () => {
+    expect(
+      regionOrder({
+        isLooping: false,
+        looping: false,
+        startBeats: 8,
+        endBeats: 12,
+        startMarkerBeats: 8,
+      }),
+    ).toStrictEqual(["end_marker", "start_marker"]);
+  });
+
+  it("turns looping on before writing the loop brace", () => {
+    const keys = Object.keys(
+      buildClipPropertiesToSet({
+        ...base,
+        looping: true,
+        startBeats: 0,
+        endBeats: 8,
+      }),
+    );
+
+    expect(keys.indexOf("looping")).toBeLessThan(keys.indexOf("loop_start"));
+  });
+
+  it("writes the markers before turning looping off", () => {
+    const props = buildClipPropertiesToSet({
+      ...base,
+      isLooping: false,
+      looping: false,
+      startBeats: 0,
+      endBeats: 8,
+      startMarkerBeats: 0,
+    });
+    const keys = Object.keys(props);
+
+    expect(props.looping).toBe(false);
+    expect(keys.indexOf("end_marker")).toBeLessThan(keys.indexOf("looping"));
+    expect(props.loop_start).toBeUndefined();
   });
 });

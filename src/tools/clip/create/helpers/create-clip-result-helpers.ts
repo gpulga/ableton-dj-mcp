@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 import { abletonBeatsToBarBeatDuration } from "#src/notation/barbeat/time/barbeat-time.ts";
+import { endMovesFirst } from "#src/tools/clip/helpers/clip-region-order.ts";
 import { type MidiNote } from "#src/tools/clip/helpers/clip-result-helpers.ts";
 import { formatSlot } from "#src/tools/shared/validation/position-parsing.ts";
 
@@ -44,22 +45,26 @@ export function buildClipProperties(
   timeSigDenominator: number,
   clipLength: number,
 ): ClipPropertiesToSet {
-  const propsToSet: ClipPropertiesToSet = {
-    start_marker: startBeats ?? 0,
-    loop_start: startBeats ?? 0,
-    loop_end: 0,
-    end_marker: 0,
-  };
-
-  // Set start_marker and loop_start is handled above
-
-  // Set loop_end and end_marker
   // Use clipLength as default when endBeats not specified
-  // Note: loop_end must be > loop_start (Live API constraint)
+  const start = startBeats ?? 0;
   const effectiveEnd = endBeats ?? clipLength;
 
-  propsToSet.loop_end = effectiveEnd;
-  propsToSet.end_marker = effectiveEnd;
+  // A fresh clip spans 0..clipLength. Live rejects a loop_start past loop_end
+  // and silently drops a start_marker past end_marker, so a start at or past
+  // the fresh clip's end needs the ends moved first.
+  const propsToSet: ClipPropertiesToSet = endMovesFirst(start, clipLength)
+    ? {
+        loop_end: effectiveEnd,
+        end_marker: effectiveEnd,
+        start_marker: start,
+        loop_start: start,
+      }
+    : {
+        start_marker: start,
+        loop_start: start,
+        loop_end: effectiveEnd,
+        end_marker: effectiveEnd,
+      };
 
   // Set playing_position (firstStart) only for looping clips
   if (looping && firstStartBeats != null) {

@@ -323,9 +323,8 @@ function applyTimingAndBasicProperties(
     isLooping,
   });
 
-  const currentLoopEnd = isLooping
-    ? (clip.getProperty("loop_end") as number)
-    : null;
+  const currentLoopEnd = clip.getProperty("loop_end") as number;
+  const currentEndMarker = clip.getProperty("end_marker") as number;
 
   applyBasicClipProperties(clip, {
     name,
@@ -339,6 +338,7 @@ function applyTimingAndBasicProperties(
     startBeats,
     endBeats,
     currentLoopEnd,
+    currentEndMarker,
     legato,
     muted,
   });

@@ -35,29 +35,42 @@ interface TimeSignature {
  * Determine start_marker value with bounds checking
  * @param firstStartBeats - First start position in beats
  * @param startBeats - Start position in beats
+ * @param endBeats - New end position in beats, or null if unchanged
  * @param endMarker - Clip end marker (content boundary)
  * @returns start_marker value or null if not applicable
  */
 function determineStartMarker(
   firstStartBeats: number | null,
   startBeats: number | null,
+  endBeats: number | null,
   endMarker: number,
 ): number | null {
+  // The end marker moves in the same write when the new end is past it
+  const contentEnd = Math.max(endMarker, endBeats ?? endMarker);
+
   if (firstStartBeats != null) {
-    if (firstStartBeats < endMarker) {
+    if (firstStartBeats < contentEnd) {
       return firstStartBeats;
     }
 
     console.warn(
-      `firstStart parameter ignored - exceeds clip content boundary (${firstStartBeats} >= ${endMarker})`,
+      `firstStart parameter ignored - exceeds clip content boundary (${firstStartBeats} >= ${contentEnd})`,
     );
 
     return null;
   }
 
-  if (startBeats != null && startBeats < endMarker) {
+  if (startBeats == null) {
+    return null;
+  }
+
+  if (startBeats < contentEnd) {
     return startBeats;
   }
+
+  console.warn(
+    `start marker not moved - start ${startBeats} is at or past the clip's end (${contentEnd}); pass length to move the end too`,
+  );
 
   return null;
 }
@@ -128,6 +141,17 @@ export function calculateBeatPositions({
     endBeats = startBeats + lengthBeats;
   }
 
+  // A looping clip whose new start is at or past its loop end keeps its loop
+  // length: Live rejects a loop_start behind loop_end
+  if (startBeats != null && endBeats == null && isLooping) {
+    const loopStart = clip.getProperty("loop_start") as number;
+    const loopEnd = clip.getProperty("loop_end") as number;
+
+    if (startBeats >= loopEnd) {
+      endBeats = startBeats + (loopEnd - loopStart);
+    }
+  }
+
   // Handle firstStart for looping clips
   if (firstStart != null && isLooping) {
     firstStartBeats = barBeatToAbletonBeats(
@@ -142,6 +166,7 @@ export function calculateBeatPositions({
   const startMarkerBeats = determineStartMarker(
     firstStartBeats,
     startBeats,
+    endBeats,
     endMarker,
   );
 
