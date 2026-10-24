@@ -252,5 +252,85 @@ class SerializeItemTest(unittest.TestCase):
         self.assertEqual(len(out["children"]), 1)
 
 
+
+def _places_browser():
+    kick = FakeItem(name="Kick_Punchy_01.wav", uri="userfolder:lib#kick",
+                    is_loadable=True)
+    loop = FakeItem(name="Bass_Loop_124_Fm.wav", uri="userfolder:lib#bass",
+                    is_loadable=True)
+    loops = FakeItem(name="Loops", is_folder=True, children=[loop])
+    library = FakeItem(name="Guy J Pack", is_folder=True, children=[kick, loops])
+    # Live exposes Places as a tuple of folders, not one BrowserItem
+    return FakeBrowser(user_folders=(library,))
+
+
+class PlacesTest(unittest.TestCase):
+    def test_lists_place_folders(self):
+        out = browser_ops.browse(_places_browser(), category="user_folders")
+
+        self.assertEqual([it["name"] for it in out["items"]], ["Guy J Pack"])
+
+    def test_walks_into_a_place(self):
+        out = browser_ops.browse(
+            _places_browser(), category="user_folders", path="Guy J Pack/Loops"
+        )
+
+        self.assertEqual([it["name"] for it in out["items"]], ["Bass_Loop_124_Fm.wav"])
+
+    def test_finds_a_place_item_by_uri(self):
+        item = browser_ops.find_by_uri(_places_browser(), "userfolder:lib#bass")
+
+        self.assertEqual(item.name, "Bass_Loop_124_Fm.wav")
+
+
+class RecursiveSearchTest(unittest.TestCase):
+    def test_finds_matches_at_any_depth_with_their_path(self):
+        out = browser_ops.browse(
+            _places_browser(), category="user_folders", search="bass",
+            recursive=True,
+        )
+
+        self.assertEqual(len(out["items"]), 1)
+        hit = out["items"][0]
+        self.assertEqual(hit["path"], "Guy J Pack/Loops")
+        self.assertEqual(hit["bpm"], 124)
+        self.assertEqual(hit["key"], "Fm")
+        self.assertFalse(out["truncated"])
+
+    def test_limit_truncates(self):
+        out = browser_ops.browse(
+            _places_browser(), category="user_folders", search="_",
+            recursive=True, limit=1,
+        )
+
+        self.assertEqual(len(out["items"]), 1)
+        self.assertTrue(out["truncated"])
+
+    def test_without_recursive_only_direct_children_match(self):
+        out = browser_ops.browse(
+            _places_browser(), category="user_folders", search="bass",
+        )
+
+        self.assertEqual(out["items"], [])
+
+
+class NameTagsTest(unittest.TestCase):
+    def test_bpm_and_key_from_pack_names(self):
+        cases = {
+            "Bass_Loop_124_Fm.wav": {"bpm": 124, "key": "Fm"},
+            "Chord (122) A#min.wav": {"bpm": 122, "key": "A#m"},
+            "Pad 120bpm C maj.aif": {"bpm": 120, "key": "C"},
+            "Pad A Minor 120.wav": {"bpm": 120, "key": "Am"},
+            "Bass F Sharp Min 124.wav": {"bpm": 124, "key": "F#m"},
+            "Lead_Gb_Major_126.wav": {"bpm": 126, "key": "Gb"},
+        }
+        for name, tags in cases.items():
+            self.assertEqual(browser_ops.name_tags(name), tags, name)
+
+    def test_ignores_numbers_and_letters_that_are_not_tempo_or_key(self):
+        for name in ("Kick 01.wav", "Kick A.wav", "Hat 808.wav", "Loop_A_Mix.wav"):
+            self.assertEqual(browser_ops.name_tags(name), {}, name)
+
+
 if __name__ == "__main__":
     unittest.main()
