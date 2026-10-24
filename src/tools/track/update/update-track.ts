@@ -64,6 +64,25 @@ export interface UpdateTrackResult {
 }
 
 /**
+ * Arm or disarm a track, and warn when Live didn't keep it
+ * @param track - Track to update
+ * @param arm - Arm state, or undefined to leave it
+ */
+function applyArm(track: LiveAPI, arm: boolean | undefined): void {
+  if (arm == null) {
+    return;
+  }
+
+  track.set("arm", arm);
+
+  if ((track.getProperty("arm") as number) > 0 !== arm) {
+    console.warn(
+      `updateTrack: arm ${arm} did not stick on track ${track.id} (check the track can be armed and has an input)`,
+    );
+  }
+}
+
+/**
  * Apply monitoring state to a track
  * @param track - Track object
  * @param monitoringState - Monitoring state value (in, auto, off)
@@ -379,7 +398,6 @@ export async function updateTrack(
       color: trackColor,
       mute,
       solo,
-      arm,
     });
 
     // Verify color quantization if color was set
@@ -425,6 +443,9 @@ export async function updateTrack(
 
     // Handle send properties
     applySendProperties(track, sendGainDb, sendReturn);
+
+    // Arm last: changing input routing or monitoring can disarm the track
+    applyArm(track, arm);
 
     // Build optimistic result object
     const trackResult: UpdateTrackResult = { id: track.id };
