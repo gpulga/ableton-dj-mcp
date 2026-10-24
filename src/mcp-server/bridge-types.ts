@@ -36,13 +36,6 @@ export interface AutomationWriteArgs {
   echo?: number[];
 }
 
-export interface AutomationValuesArgs {
-  clip: AutomationClipRef;
-  target: AutomationTarget;
-  /** Display values with units, e.g. "1200Hz", "-12dB" */
-  displays: string[];
-}
-
 export interface AutomationWriteResult {
   pointCount: number;
   paramName: string;

@@ -18,7 +18,7 @@ interface FakeBridge {
   automationWrite: ReturnType<typeof vi.fn>;
   automationRead: ReturnType<typeof vi.fn>;
   automationClear: ReturnType<typeof vi.fn>;
-  automationValues: ReturnType<typeof vi.fn>;
+  send: ReturnType<typeof vi.fn>;
 }
 
 const WRITE_RESULT = {
@@ -37,7 +37,7 @@ function makeBridge(overrides: Partial<FakeBridge> = {}): FakeBridge {
       overrides.automationWrite ?? vi.fn().mockResolvedValue(WRITE_RESULT),
     automationRead: overrides.automationRead ?? vi.fn(),
     automationClear: overrides.automationClear ?? vi.fn(),
-    automationValues: overrides.automationValues ?? vi.fn(),
+    send: overrides.send ?? vi.fn(),
   };
 }
 
@@ -145,7 +145,7 @@ describe("handleAutomate", () => {
 
   it("maps display values through the bridge and echoes the anchors", async () => {
     const bridge = makeBridge({
-      automationValues: vi.fn().mockResolvedValue([0.2, 0.6]),
+      send: vi.fn().mockResolvedValue([0.2, 0.6]),
     });
 
     await handleAutomate(asBridge(bridge), makeNext(), {
@@ -155,15 +155,19 @@ describe("handleAutomate", () => {
       points: "1|1:200Hz, 5|1:0.5, 9|1:1.2kHz",
     });
 
-    expect(bridge.automationValues).toHaveBeenCalledWith({
-      clip: { trackIndex: 0, sceneIndex: 3 },
-      target: {
-        kind: "device",
-        chain: [{ type: "d", index: 1 }],
-        paramName: "Frequency",
+    expect(bridge.send).toHaveBeenCalledWith(
+      "automation_values",
+      {
+        clip: { trackIndex: 0, sceneIndex: 3 },
+        target: {
+          kind: "device",
+          chain: [{ type: "d", index: 1 }],
+          paramName: "Frequency",
+        },
+        displays: ["200Hz", "1.2kHz"],
       },
-      displays: ["200Hz", "1.2kHz"],
-    });
+      10_000,
+    );
 
     const call = bridge.automationWrite.mock.calls[0]?.[0] as {
       points: AutomationPoint[];
@@ -184,7 +188,7 @@ describe("handleAutomate", () => {
       points: "1|1:0, 9|1:1",
     });
 
-    expect(bridge.automationValues).not.toHaveBeenCalled();
+    expect(bridge.send).not.toHaveBeenCalled();
     expect(
       (bridge.automationWrite.mock.calls[0]?.[0] as { echo: number[] }).echo,
     ).toStrictEqual([0, 1]);

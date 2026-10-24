@@ -69,6 +69,8 @@ interface ReadClipPayload {
   end?: string;
 }
 
+const AUTOMATION_VALUES_TIMEOUT_MS = 10_000;
+
 const STALE_BRIDGE_HINT =
   "Bridge is outdated and missing the automation ops. Rerun " +
   "`npm run install:bridge`, restart Live, and re-enable the control surface.";
@@ -194,11 +196,11 @@ async function resolveAnchorValues(
     .filter((value): value is string => typeof value === "string");
   const mapped =
     displays.length > 0
-      ? await bridge.automationValues({
-          clip: clipInfo.ref,
-          target,
-          displays,
-        })
+      ? await bridge.send<number[]>(
+          "automation_values",
+          { clip: clipInfo.ref, target, displays },
+          AUTOMATION_VALUES_TIMEOUT_MS,
+        )
       : [];
   let next = 0;
 
