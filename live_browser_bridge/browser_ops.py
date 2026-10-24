@@ -60,9 +60,9 @@ def list_categories(browser):
 
 
 class _FolderList(object):
-    """Stands in for a root that Live exposes as a list of folders rather than
-    one BrowserItem: ``Browser.user_folders`` (Places) is a tuple, so treating
-    it as an item listed nothing."""
+    """Stands in for a root that Live exposes as a sequence of folders rather
+    than one BrowserItem: ``Browser.user_folders`` (Places) is a vector, so
+    treating it as an item listed nothing."""
 
     is_folder = True
     is_device = False
@@ -75,9 +75,14 @@ class _FolderList(object):
 
 
 def _as_item(name, value):
-    if isinstance(value, (list, tuple)):
-        return _FolderList(name, value)
-    return value
+    # Live hands Places back as its own vector type, not a list or tuple, so
+    # anything without children that can be iterated is a list of folders.
+    if hasattr(value, "children") or hasattr(value, "iter_children"):
+        return value
+    try:
+        return _FolderList(name, list(value))
+    except TypeError:
+        return value
 
 
 def get_category_root(browser, category):
