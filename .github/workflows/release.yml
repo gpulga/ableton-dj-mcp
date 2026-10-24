@@ -7,6 +7,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  issues: write
   actions: write
 
 # Serialize runs: each one rewrites the release PR branch.
@@ -47,6 +48,13 @@ jobs:
           git checkout "$TAG"
           npm run release:package
           gh release upload "$TAG" release/*.zip release/*.mcpb --clobber
+
+      - name: Label released issues with the version
+        if: ${{ steps.release.outputs.release_created }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.release.outputs.tag_name }}
+        run: npm run release:label -- "$TAG"
 
       - name: Rebuild dist on the release PR and dispatch CI
         env:
