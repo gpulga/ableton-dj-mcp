@@ -14,6 +14,9 @@ Why this lives in the Python bridge at all: ``Clip.automation_envelope``,
 for Live LOM whitelist does not expose them to JS. See
 docs/findings/dev/device/clip-envelope-api-python-only.md."""
 
+import math
+import re
+
 # Envelope times land on a breakpoint grid; two floats within this distance
 # refer to the same arrangement position.
 ARRANGEMENT_MATCH_EPSILON = 0.01
@@ -184,6 +187,75 @@ def normalize(param, raw_value):
     if hi == lo:
         return 0.0
     return (float(raw_value) - lo) / (hi - lo)
+
+
+# Display values as Live prints them ("1.20 kHz", "-12.0 dB", "25 %",
+# "250 ms", "-inf dB") and as callers write them ("1200Hz", "-12dB").
+_DISPLAY_RE = re.compile(
+    r"^\s*(-?(?:\d+(?:\.\d*)?|\.\d+|inf))\s*(khz|hz|db|%|ms|s)\s*$",
+    re.IGNORECASE,
+)
+_UNIT_SCALE = {"khz": ("hz", 1000.0), "hz": ("hz", 1.0), "db": ("db", 1.0),
+               "%": ("%", 1.0), "ms": ("s", 0.001), "s": ("s", 1.0)}
+DISPLAY_SEARCH_STEPS = 40
+
+
+def parse_display(text):
+    """``(value, unit)`` for a display string, unit normalized to hz/db/%/s,
+    or None when the text isn't a number with a known unit."""
+    match = _DISPLAY_RE.match(str(text))
+    if match is None:
+        return None
+    unit, scale = _UNIT_SCALE[match.group(2).lower()]
+    return float(match.group(1)) * scale, unit
+
+
+def display_to_normalized(param, text):
+    """The 0..1 value at which ``param`` displays ``text`` (e.g. "1200Hz"),
+    found by binary search over Live's own value-to-label mapping, so log
+    filters and dB faders land where the label says. Clamps to the range."""
+    wanted = parse_display(text)
+    if wanted is None:
+        raise AutomationOpError(
+            "can't read %r as a value with a unit (Hz, kHz, dB, %%, ms, s)" % text
+        )
+    lo, hi = float(param.min), float(param.max)
+    at_lo, at_hi = _display_at(param, lo), _display_at(param, hi)
+    if at_lo is None or at_hi is None or at_lo[1] != wanted[1]:
+        shown = param.str_for_value(lo)
+        raise AutomationOpError(
+            "%s shows values like %r, so %r can't be mapped onto it"
+            % (getattr(param, "name", "param"), shown, text)
+        )
+    target = wanted[0]
+    rising = at_hi[0] >= at_lo[0]
+    if (target <= at_lo[0]) == rising:
+        return 0.0
+    if (target >= at_hi[0]) == rising:
+        return 1.0
+    a, b = lo, hi
+    for _ in range(DISPLAY_SEARCH_STEPS):
+        mid = (a + b) / 2.0
+        shown = _display_at(param, mid)
+        if shown is None:
+            break
+        if (shown[0] < target) == rising:
+            a = mid
+        else:
+            b = mid
+    return normalize(param, (a + b) / 2.0)
+
+
+def displays_for(param, values01):
+    """What Live displays at each normalized value: a read-back of a write."""
+    return [param.str_for_value(denormalize(param, v)) for v in values01]
+
+
+def _display_at(param, raw):
+    parsed = parse_display(param.str_for_value(raw))
+    if parsed is None or math.isnan(parsed[0]):
+        return None
+    return parsed
 
 
 def write_points(clip, param, points, clear_first=False):

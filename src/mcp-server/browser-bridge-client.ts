@@ -13,6 +13,7 @@ import {
   type AutomationClearResult,
   type AutomationReadArgs,
   type AutomationReadResult,
+  type AutomationValuesArgs,
   type AutomationWriteArgs,
   type AutomationWriteResult,
   type BrowseArgs,
@@ -80,6 +81,7 @@ interface BridgeRequest {
     | "end_undo_step"
     | "convert_clip"
     | "track_ids"
+    | "automation_values"
     | "shutdown";
   args: Record<string, unknown>;
 }
@@ -110,9 +112,6 @@ export type {
   ConvertKind,
   LoadItemArgs,
   LoadItemResult,
-} from "./bridge-types.ts";
-
-export type {
   AutomationClearArgs,
   AutomationClearResult,
   AutomationClipRef,
@@ -259,6 +258,19 @@ export class BrowserBridgeClient {
       "automation_read",
       { ...args },
       timeoutMs,
+    );
+  }
+
+  /**
+   * Map display values ("1200Hz", "-12dB") to the param's 0..1 values.
+   * @param args - Clip ref, parameter target, and display values
+   * @returns Normalized values, in input order
+   */
+  async automationValues(args: AutomationValuesArgs): Promise<number[]> {
+    return await this.send<number[]>(
+      "automation_values",
+      { ...args },
+      DEFAULT_AUTOMATION_TIMEOUT_MS,
     );
   }
 

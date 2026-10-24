@@ -32,6 +32,15 @@ export interface AutomationWriteArgs {
   target: AutomationTarget;
   points: Array<[timeBeats: number, value01: number]>;
   clearFirst?: boolean;
+  /** Normalized values to read back as Live displays them */
+  echo?: number[];
+}
+
+export interface AutomationValuesArgs {
+  clip: AutomationClipRef;
+  target: AutomationTarget;
+  /** Display values with units, e.g. "1200Hz", "-12dB" */
+  displays: string[];
 }
 
 export interface AutomationWriteResult {
@@ -41,6 +50,8 @@ export interface AutomationWriteResult {
   paramMax: number;
   envelopeCreated: boolean;
   clipLengthBeats: number;
+  /** Live's labels at each echo value */
+  displays?: string[];
 }
 
 export interface AutomationReadArgs {
