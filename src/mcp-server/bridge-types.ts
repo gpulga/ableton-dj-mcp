@@ -73,6 +73,7 @@ export interface BrowseArgs {
   category?: string;
   path?: string;
   search?: string;
+  recursive?: boolean;
   depth?: number;
   limit?: number;
 }
@@ -84,6 +85,12 @@ export interface BrowseItem {
   isDevice: boolean;
   isLoadable: boolean;
   children?: BrowseItem[];
+  /** Recursive search only: folder path relative to the searched path */
+  path?: string;
+  /** Parsed from sample names that carry a tempo */
+  bpm?: number;
+  /** Parsed from sample names that carry a key, e.g. "F#m" */
+  key?: string;
 }
 
 export interface BrowseResult {

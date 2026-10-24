@@ -15,6 +15,7 @@ exposed ``iter_children``)."""
 import collections
 import itertools
 import json
+import re
 
 # macOS's default net.inet.udp.maxdgram is 9216 bytes; a sendto() over that
 # fails with EMSGSIZE. BrowserBridge._send() catches that and only logs it,
@@ -58,6 +59,27 @@ def list_categories(browser):
     return out
 
 
+class _FolderList(object):
+    """Stands in for a root that Live exposes as a list of folders rather than
+    one BrowserItem: ``Browser.user_folders`` (Places) is a tuple, so treating
+    it as an item listed nothing."""
+
+    is_folder = True
+    is_device = False
+    is_loadable = False
+    uri = ""
+
+    def __init__(self, name, items):
+        self.name = name
+        self.children = list(items)
+
+
+def _as_item(name, value):
+    if isinstance(value, (list, tuple)):
+        return _FolderList(name, value)
+    return value
+
+
 def get_category_root(browser, category):
     """Return the BrowserItem root for ``category`` or raise BrowserOpError."""
     if category not in CATEGORY_ATTRS:
@@ -65,7 +87,7 @@ def get_category_root(browser, category):
     root = getattr(browser, category, None)
     if root is None:
         raise BrowserOpError("category not available: %s" % category)
-    return root
+    return _as_item(category, root)
 
 
 def children_of(item, max_items=None):
@@ -147,7 +169,73 @@ def _reply_bytes(category, path, items):
     return len(json.dumps(envelope).encode("utf-8"))
 
 
-def browse(browser, category=None, path=None, search=None, depth=1, limit=100):
+# Sample-pack naming conventions: "Bass_Loop_124_Fm.wav", "Chord (122) A#min",
+# "Pad 120bpm C maj". A bare number only counts as BPM inside the usual tempo
+# range and between separators, so "Kick 01" isn't read as a tempo.
+_SEP = r"[\s_\-()\[\].]"
+_BPM_RE = re.compile(
+    r"(?:(\d{2,3})\s?bpm|bpm\s?(\d{2,3})|(?:^|%s)(\d{2,3})(?=%s|$))" % (_SEP, _SEP),
+    re.IGNORECASE,
+)
+_KEY_RE = re.compile(
+    r"(?:^|%s)([A-G])(?:[\s_\-]?([#b]|(?i:sharp|flat)))?(?:[\s_\-]?((?i:maj(?:or)?|min(?:or)?)|m))?(?=%s|$)"
+    % (_SEP, _SEP)
+)
+MIN_BPM = 60
+MAX_BPM = 200
+
+
+def name_tags(name):
+    """BPM and key parsed from a sample's file name, when it carries them."""
+    stem = name.rsplit(".", 1)[0] if "." in name else name
+    tags = {}
+    for match in _BPM_RE.finditer(stem):
+        value = int(next(group for group in match.groups() if group))
+        if MIN_BPM <= value <= MAX_BPM:
+            tags["bpm"] = value
+            break
+    for match in _KEY_RE.finditer(stem):
+        root, accidental, quality = match.groups()
+        # A lone letter ("Kick A") is too ambiguous to call a key
+        if not accidental and not quality:
+            continue
+        accidental = {"sharp": "#", "flat": "b"}.get(
+            (accidental or "").lower(), accidental or ""
+        )
+        minor = quality is not None and quality.lower().startswith("m") and not quality.lower().startswith("maj")
+        tags["key"] = "%s%s%s" % (root, accidental, "m" if minor else "")
+        break
+    return tags
+
+
+def _deep_search(target, needle, cap):
+    """Breadth-first walk of everything under ``target`` whose name contains
+    ``needle``. Returns up to ``cap`` (item, relative path) pairs."""
+    found = []
+    queue = collections.deque((child, "") for child in children_of(target))
+    seen = 0
+    while queue and seen < MAX_FIND_NODES and len(found) < cap:
+        item, parent = queue.popleft()
+        seen += 1
+        name = getattr(item, "name", "") or ""
+        if needle in name.lower():
+            found.append((item, parent))
+        if getattr(item, "is_folder", False):
+            here = "%s/%s" % (parent, name) if parent else name
+            queue.extend((child, here) for child in children_of(item))
+    return found
+
+
+def _serialize_found(item, parent):
+    out = serialize_item(item, max_depth=0, include_children=False)
+    out["path"] = parent
+    if not out["isFolder"]:
+        out.update(name_tags(out["name"]))
+    return out
+
+
+def browse(browser, category=None, path=None, search=None, depth=1, limit=100,
+           recursive=False):
     """Return a serialized listing of the browser tree.
 
     - No ``category``: list category names.
@@ -155,6 +243,10 @@ def browse(browser, category=None, path=None, search=None, depth=1, limit=100):
     - With ``category`` + ``path``: walk to that subnode and list its children.
     - With ``search``: case-insensitive substring filter applied AFTER children
       enumeration. depth>1 supported to expand sub-folders inline.
+    - With ``search`` + ``recursive``: match names anywhere under the target
+      (breadth-first, capped at MAX_FIND_NODES). Each hit carries its folder
+      ``path`` relative to the target, plus ``bpm``/``key`` parsed from file
+      names that follow sample-pack naming.
     - ``limit`` truncates the top-level item list. Truncation is reported via
       the ``truncated`` flag on the result."""
     if category is None:
@@ -165,6 +257,17 @@ def browse(browser, category=None, path=None, search=None, depth=1, limit=100):
 
     root = get_category_root(browser, category)
     target = walk_path(root, path)
+
+    if search and recursive:
+        cap = (limit + 1) if limit is not None else MAX_FIND_NODES
+        found = _deep_search(target, search.lower(), cap)
+        truncated = limit is not None and len(found) > limit
+        items = [_serialize_found(item, parent) for item, parent in found[:limit]]
+        while items and _reply_bytes(category, path, items) > MAX_REPLY_BYTES:
+            items.pop()
+            truncated = True
+        return {"category": category, "path": path or "", "items": items,
+                "truncated": truncated}
 
     if search:
         # A search needs to scan every child to find matches, so there's no
@@ -257,12 +360,12 @@ def find_by_uri(browser, uri, category=None):
     inferred = category_for_uri(uri)
     inferred_root = getattr(browser, inferred, None) if inferred else None
     if inferred_root is not None:
-        found = _search([inferred_root], uri)
+        found = _search([_as_item(inferred, inferred_root)], uri)
         if found is not None:
             return found
 
     roots = [
-        getattr(browser, attr)
+        _as_item(attr, getattr(browser, attr))
         for attr in CATEGORY_ATTRS
         if getattr(browser, attr, None) is not None
     ]

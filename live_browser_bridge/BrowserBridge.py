@@ -234,6 +234,7 @@ class BrowserBridge(ControlSurface):
             search=args.get("search"),
             depth=int(args.get("depth", 1)),
             limit=int(args.get("limit", 100)),
+            recursive=bool(args.get("recursive")),
         )
 
     def _op_load_item(self, args):
