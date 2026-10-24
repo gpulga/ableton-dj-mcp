@@ -226,8 +226,9 @@ browser URIs. Use the URIs with `adj-create-device --browserUri` to load.
 - `recursive` — with `search`, match anywhere under `path` instead of direct
   children only. Each hit carries its folder `path`, plus `bpm` and `key` parsed
   from sample names that follow pack naming (`Bass_Loop_124_Fm.wav` →
-  `bpm: 124, key: "Fm"`). Example: `category: "user_folders", search: "kick",
-recursive: true` finds kicks across all your own sample libraries.
+  `bpm: 124, key: "Fm"`). Example:
+  `category: "user_folders", search: "kick", recursive: true` finds kicks across
+  all your own sample libraries.
 - `user_folders` is Live's Places: folders you added to the browser sidebar
 - `depth` — child levels to expand inline (default 1, max 3)
 - `limit` — top-level items to return (default 100, max 500)
