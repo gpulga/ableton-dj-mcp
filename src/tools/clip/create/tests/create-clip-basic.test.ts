@@ -4,6 +4,7 @@
 
 import { describe, expect, it } from "vitest";
 import { createClip } from "../create-clip.ts";
+import { buildClipProperties } from "../helpers/create-clip-result-helpers.ts";
 import {
   expectClipCreated,
   expectNotesAdded,
@@ -268,5 +269,51 @@ describe("createClip - basic validation and time signatures", () => {
 
     // 1|2 = 1 beat in 4/4 time
     expect(clip.set).toHaveBeenCalledWith("playing_position", 1);
+  });
+});
+
+describe("buildClipProperties - region write order", () => {
+  it("writes starts first when the start is inside the fresh clip", () => {
+    const props = buildClipProperties(
+      1,
+      4,
+      null,
+      true,
+      undefined,
+      null,
+      4,
+      4,
+      4,
+    );
+
+    expect(Object.keys(props).slice(0, 4)).toStrictEqual([
+      "start_marker",
+      "loop_start",
+      "loop_end",
+      "end_marker",
+    ]);
+  });
+
+  it("moves the ends first when the start is at or past the fresh clip's end", () => {
+    // start 2|1 with a 1-bar region: the fresh clip spans 0..4
+    const props = buildClipProperties(
+      4,
+      8,
+      null,
+      true,
+      undefined,
+      null,
+      4,
+      4,
+      4,
+    );
+
+    expect(Object.keys(props).slice(0, 4)).toStrictEqual([
+      "loop_end",
+      "end_marker",
+      "start_marker",
+      "loop_start",
+    ]);
+    expect(props.loop_end).toBe(8);
   });
 });
