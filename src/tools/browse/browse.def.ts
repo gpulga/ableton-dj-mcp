@@ -29,7 +29,8 @@ export const toolDefBrowse = defineTool("adj-browse", {
   description:
     "Browse Ableton Live's Library and User Library tree. Returns category " +
     "roots, folder children, and loadable items with their stable browser " +
-    "URIs. Pair the URI with adj-create-device to load by URI. Requires the " +
+    "URIs. Pair the URI with adj-create-device to load by URI. user_folders " +
+    "is Live's Places (your own sample libraries). Requires the " +
     "Live Browser Bridge — install with `npm run install:bridge`.",
   annotations: {
     readOnlyHint: true,
@@ -52,6 +53,12 @@ export const toolDefBrowse = defineTool("adj-browse", {
       .string()
       .optional()
       .describe("case-insensitive substring filter applied to children"),
+    recursive: z
+      .boolean()
+      .optional()
+      .describe(
+        "with search: match anywhere under path, not just direct children. Hits carry their folder path, plus bpm/key parsed from sample names (e.g. 'Bass_Loop_124_Fm.wav')",
+      ),
     depth: z
       .number()
       .int()
