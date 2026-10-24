@@ -260,8 +260,18 @@ def _places_browser():
                     is_loadable=True)
     loops = FakeItem(name="Loops", is_folder=True, children=[loop])
     library = FakeItem(name="Guy J Pack", is_folder=True, children=[kick, loops])
-    # Live exposes Places as a tuple of folders, not one BrowserItem
-    return FakeBrowser(user_folders=(library,))
+    # Live exposes Places as its own vector of folders, not one BrowserItem
+    return FakeBrowser(user_folders=FakeVector([library]))
+
+
+class FakeVector(object):
+    """Iterable but neither a list nor a tuple, like Live's vector types."""
+
+    def __init__(self, items):
+        self._items = items
+
+    def __iter__(self):
+        return iter(self._items)
 
 
 class PlacesTest(unittest.TestCase):
