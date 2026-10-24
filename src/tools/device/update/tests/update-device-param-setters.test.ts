@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 import { beforeEach, describe, expect, it } from "vitest";
+import { MockSequence } from "#src/test/mocks/mock-live-api-property-helpers.ts";
 import {
   type RegisteredMockObject,
   children,
@@ -516,5 +517,67 @@ describe("updateDevice - param value conversion", () => {
 
       expect(ratio.set).toHaveBeenCalledWith("value", 1);
     });
+  });
+});
+
+describe("updateDevice - automation override", () => {
+  const OVERRIDE_WARNING =
+    "updateDevice: this write overrode automation. Live stops playing automation and clip envelopes on the changed params until re-enabled (adj-playback action re-enable-automation). Finish sound design before automating, or re-enable after";
+
+  /**
+   * Register live_set with re_enable_automation_enabled reads in order
+   * @param states - Successive values of the flag
+   */
+  function registerOverrideStates(...states: number[]): void {
+    registerMockObject("live_set", {
+      path: livePath.liveSet,
+      type: "Song",
+      properties: {
+        re_enable_automation_enabled: new MockSequence(...states),
+      },
+    });
+  }
+
+  beforeEach(() => {
+    registerMockObject("dev1", {
+      path: livePath.track(0).device(0),
+      type: "Device",
+      properties: { parameters: children("p1") },
+    });
+    registerMockObject("p1", {
+      properties: {
+        name: "Cutoff",
+        original_name: "Cutoff",
+        is_quantized: 0,
+        value: 0.5,
+        min: 0,
+        max: 1,
+      },
+      methods: { str_for_value: (value: unknown) => String(value) },
+    });
+  });
+
+  it("warns when the write makes Live override automation", () => {
+    registerOverrideStates(0, 1);
+
+    updateDevice({ ids: "dev1", params: "Cutoff=0.5" });
+
+    expect(outlet).toHaveBeenCalledWith(1, OVERRIDE_WARNING);
+  });
+
+  it("stays quiet when automation was already overridden", () => {
+    registerOverrideStates(1, 1);
+
+    updateDevice({ ids: "dev1", params: "Cutoff=0.5" });
+
+    expect(outlet).not.toHaveBeenCalledWith(1, OVERRIDE_WARNING);
+  });
+
+  it("stays quiet when nothing is overridden", () => {
+    registerOverrideStates(0, 0);
+
+    updateDevice({ ids: "dev1", params: "Cutoff=0.5" });
+
+    expect(outlet).not.toHaveBeenCalledWith(1, OVERRIDE_WARNING);
   });
 });

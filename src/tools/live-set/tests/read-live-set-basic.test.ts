@@ -280,6 +280,24 @@ describe("readLiveSet - basic reading", () => {
     });
   });
 
+  it("flags automation that Live is overriding", () => {
+    setupLiveSetPathMappedMocks({
+      liveSetId: "live_set",
+      pathIdMap: { [String(livePath.masterTrack())]: "master1" },
+      objects: {
+        LiveSet: {
+          tracks: [],
+          return_tracks: children(),
+          scenes: [],
+          re_enable_automation_enabled: 1,
+        },
+        [String(livePath.masterTrack())]: MASTER_TRACK_MOCK,
+      },
+    });
+
+    expect(readLiveSet({})).toMatchObject({ automationOverridden: true });
+  });
+
   it("includes instrument name on tracks with instruments", () => {
     setupLiveSetPathMappedMocks({
       liveSetId: "live_set_id",
