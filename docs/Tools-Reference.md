@@ -229,8 +229,14 @@ Requires the Live Browser Bridge Python sidecar — install with
 
 Update device parameters by name or index.
 
-- `params: [{ name: "Cutoff", value: 0.7 }]`
+- `params` — `name=value` per line, in display units (`Filter Freq=1200`)
 - Supports chain path for rack devices
+- Simpler samples (Live 12.4+): `sample=/abs/path/kick.wav` loads a file into a
+  Simpler, `gainDb=-6` sets its gain. Both match the `sample`/`gainDb` fields
+  `adj-read-device` returns. On a drum pad or chain path (`t0/d0/pC1`) params go
+  to the Simpler in that pad, so a kit is: `adj-create-device` Simpler at each
+  pad path, then `adj-update-device` `sample=` per pad. Multi-sample Simpler is
+  not supported (Live API limit).
 
 ---
 

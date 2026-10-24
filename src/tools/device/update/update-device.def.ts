@@ -42,7 +42,7 @@ export const toolDefUpdateDevice = defineTool("adj-update-device", {
       .string()
       .optional()
       .describe(
-        "name=value per line (display units: enum string, note name, number)",
+        "name=value per line (display units: enum string, note name, number). Simpler (Live 12.4+): sample=/abs/path.wav loads a file, gainDb=-6 sets its gain; on a drum pad/chain path, params go to its Simpler",
       ),
     macroVariation: z
       .enum(["create", "load", "delete", "revert", "randomize"])
