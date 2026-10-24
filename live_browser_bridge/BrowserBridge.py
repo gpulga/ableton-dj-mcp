@@ -8,7 +8,8 @@ main thread.
 Wire-protocol:
 
     Request:  {"id": "...", "op": "ping|browse|load_item|automation_write|
-               automation_read|automation_clear|shutdown", "args": {...}}
+               automation_read|automation_clear|end_undo_step|convert_clip|
+               track_ids|shutdown", "args": {...}}
     Reply OK: {"id": "...", "ok": true,  "result": {...}}
     Reply NO: {"id": "...", "ok": false, "error": {"code": "...", "message": "..."}}
 
@@ -52,7 +53,7 @@ except ImportError:  # pragma: no cover - tests stub the base class
         def update_display(self):
             pass
 
-from . import automation_ops, browser_ops
+from . import automation_ops, browser_ops, conversion_ops
 from .version import BRIDGE_VERSION, DEFAULT_PORT
 
 
@@ -182,6 +183,10 @@ class BrowserBridge(ControlSurface):
                 return self._ok(req_id, self._op_automation_clear(args))
             if op == "end_undo_step":
                 return self._ok(req_id, self._op_end_undo_step())
+            if op == "convert_clip":
+                return self._ok(req_id, self._op_convert_clip(args))
+            if op == "track_ids":
+                return self._ok(req_id, {"trackIds": conversion_ops.track_ids(self._song())})
             if op == "shutdown":
                 # Best-effort; Live restart is the canonical way to stop us.
                 return self._ok(req_id, {"acknowledged": True})
@@ -190,6 +195,8 @@ class BrowserBridge(ControlSurface):
             return self._error(req_id, "BROWSER_API_FAILED", str(exc))
         except automation_ops.AutomationOpError as exc:
             return self._error(req_id, "AUTOMATION_FAILED", str(exc))
+        except conversion_ops.ConversionOpError as exc:
+            return self._error(req_id, "CONVERSION_FAILED", str(exc))
         except Exception as exc:
             return self._error(
                 req_id,
@@ -305,6 +312,10 @@ class BrowserBridge(ControlSurface):
         # that call. Harmless when nothing changed.
         self._song().end_undo_step()
         return {"ok": True}
+    def _op_convert_clip(self, args):
+        song = self._song()
+        clip, _track = automation_ops.resolve_clip(song, args.get("clip") or {})
+        return conversion_ops.convert(Live, song, clip, args.get("kind"))
 
     def _focused_track_device_ids(self):
         try:

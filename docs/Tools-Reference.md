@@ -74,6 +74,14 @@ Create a new MIDI, audio, or return track.
 
 - `type`: `"midi"` | `"audio"` | `"return"`
 - `trackIndex` — where to insert (defaults to end)
+- `convert` + `fromClip` — build a new track from an audio clip with Live's own
+  conversions (needs the Live Browser Bridge). `fromClip` is a clip id or a
+  session slot (`"0/3"`). Returns the new track's `trackIndex`; other params are
+  ignored.
+  - `"drums"` / `"melody"` / `"harmony"` — MIDI clip of the audio's notes (lift
+    a groove from a drum loop, a bassline or chords from a sample)
+  - `"simpler"` — the sample loaded into a Simpler on a new MIDI track
+  - `"drum-rack"` — the sample sliced onto Drum Rack pads
 
 ### `adj-update-track`
 

@@ -80,7 +80,7 @@ JSON, UTF-8.
   "id": "req_<uuid4>",
   "op": "browse" | "load_item" | "ping" | "shutdown"
       | "automation_write" | "automation_read" | "automation_clear"
-      | "end_undo_step",
+      | "end_undo_step" | "convert_clip" | "track_ids",
   "args": { ... }
 }
 ```
@@ -237,6 +237,20 @@ Shared arg shapes (all beat values are Ableton beats relative to clip time 0):
 Resolution/envelope failures use error code `AUTOMATION_FAILED`. An old bridge
 replies `INVALID_ARGS: unknown op: automation_*`; the Node side maps that to a
 "rerun `npm run install:bridge`" hint.
+
+#### `convert_clip` / `track_ids`
+
+- `convert_clip` args `{clip, kind}` → `{started, kind, trackIdsBefore}`. `clip`
+  is the same ref the automation ops take. `kind` is `drums` | `melody` |
+  `harmony` (`Live.Conversions.audio_to_midi_clip`), `simpler`
+  (`create_midi_track_with_simpler`) or `drum-rack`
+  (`create_drum_rack_from_audio_clip`). Live starts the work and builds the
+  track on a later tick, so the reply only says it started.
+- `track_ids` args `{}` → `{trackIds}`: stable track ids in order. The Node side
+  polls it until an id not in `trackIdsBefore` appears and reports that index.
+
+Refusals (MIDI or recording clip, Live can't convert it, Live too old) use error
+code `CONVERSION_FAILED`.
 
 #### `end_undo_step`
 

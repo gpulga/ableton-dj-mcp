@@ -105,3 +105,18 @@ export interface LoadItemResult {
   deviceCountBefore: number;
   deviceCountAfter: number;
 }
+
+export type ConvertKind =
+  "drums" | "melody" | "harmony" | "simpler" | "drum-rack";
+
+export interface ConvertClipArgs {
+  clip: AutomationClipRef;
+  kind: ConvertKind;
+}
+
+export interface ConvertClipResult {
+  started: boolean;
+  kind: ConvertKind;
+  /** Track ids before the conversion; the new track is the one not in here */
+  trackIdsBefore: string[];
+}

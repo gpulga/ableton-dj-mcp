@@ -39,10 +39,20 @@ export const toolDefCreateTrack = defineTool("adj-create-track", {
     mute: z.boolean().optional().describe("muted?"),
     solo: z.boolean().optional().describe("soloed?"),
     arm: z.boolean().optional().describe("record armed?"),
+    convert: z
+      .enum(["drums", "melody", "harmony", "simpler", "drum-rack"])
+      .optional()
+      .describe(
+        "new track from the audio clip in fromClip, using Live's conversions: drums/melody/harmony = MIDI clip of its notes, simpler = sample in a Simpler, drum-rack = slices on Drum Rack pads. Other params are ignored. Needs the bridge",
+      ),
+    fromClip: z.coerce
+      .string()
+      .optional()
+      .describe("with convert: audio clip id, or session slot 'track/scene'"),
   },
 
   smallModelModeConfig: {
-    excludeParams: ["count", "mute", "solo", "arm"],
+    excludeParams: ["count", "mute", "solo", "arm", "convert", "fromClip"],
     descriptionOverrides: {
       name: "track name",
       color: "#RRGGBB",
