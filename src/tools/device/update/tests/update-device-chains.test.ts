@@ -230,7 +230,7 @@ describe("updateDevice - Chain and DrumPad support", () => {
   describe("device-only properties on non-devices", () => {
     // collapsed — kept for potential future use (test removed)
 
-    it("should warn when params is used on a DrumPad", () => {
+    it("should warn when params is used on a DrumPad without a Simpler", () => {
       const result = updateDevice({
         ids: "790",
         params: "789 = 0.5",
@@ -238,7 +238,7 @@ describe("updateDevice - Chain and DrumPad support", () => {
 
       expect(outlet).toHaveBeenCalledWith(
         1,
-        "updateDevice: 'params' not applicable to DrumPad",
+        "updateDevice: 'params' on a DrumPad applies to its Simpler, and it has none. Add one with adj-create-device deviceName=Simpler at this path first",
       );
       expect(result).toStrictEqual({ id: "790" });
     });

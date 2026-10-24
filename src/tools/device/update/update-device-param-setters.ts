@@ -9,6 +9,11 @@ import {
   isPanLabel,
   parseLabel,
 } from "#src/tools/shared/device/helpers/device-display-helpers.ts";
+import {
+  loadSimplerSample,
+  setSimplerSampleGain,
+  simplerSampleParam,
+} from "#src/tools/shared/device/simpler-sample.ts";
 import { parseParamLines } from "./update-device-param-parser.ts";
 
 const BINARY_SEARCH_ITERATIONS = 40;
@@ -21,7 +26,30 @@ const BINARY_SEARCH_ITERATIONS = 40;
 export function setParamValues(device: LiveAPI, paramsInput: string): void {
   const paramEntries = parseParamLines(paramsInput);
 
-  for (const [key, inputValue] of paramEntries) {
+  // The sample loads first so a gainDb in the same call applies to it
+  const sampleEntries = paramEntries.filter(
+    ([key]) => simplerSampleParam(key) === "sample",
+  );
+  const otherEntries = paramEntries.filter(
+    ([key]) => simplerSampleParam(key) !== "sample",
+  );
+
+  for (const [key, inputValue] of [...sampleEntries, ...otherEntries]) {
+    const sampleParam = simplerSampleParam(key);
+
+    if (sampleParam != null) {
+      const refusal =
+        sampleParam === "sample"
+          ? loadSimplerSample(device, String(inputValue))
+          : setSimplerSampleGain(device, inputValue);
+
+      if (refusal != null) {
+        console.warn(`updateDevice: ${refusal}`);
+      }
+
+      continue;
+    }
+
     const param =
       resolveParamByName(device, key) ??
       (/^\d+$/.test(key) ? resolveParamForDevice(device, key) : null);

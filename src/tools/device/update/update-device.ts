@@ -5,6 +5,7 @@
 import { noteNameToMidi } from "#src/shared/pitch.ts";
 import * as console from "#src/shared/v8-max-console.ts";
 import { select } from "#src/tools/control/select.ts";
+import { findChainSimpler } from "#src/tools/shared/device/simpler-sample.ts";
 import {
   parseCommaSeparatedIds,
   unwrapSingleResult,
@@ -351,8 +352,11 @@ function updateNonDeviceProperties(
   type: string,
   options: UpdateOptions,
 ): void {
+  if (options.params != null) {
+    applyParamsToChainSimpler(target, type, options.params);
+  }
+
   // Warn for device-only properties
-  warnIfSet("params", options.params, type);
   warnIfSet("macroVariation", options.macroVariation, type);
   warnIfSet("macroVariationIndex", options.macroVariationIndex, type);
   warnIfSet("macroCount", options.macroCount, type);
@@ -385,23 +389,58 @@ function updateNonDeviceProperties(
 
   // DrumChain only: chokeGroup, mappedPitch
   if (type === "DrumChain") {
-    if (options.chokeGroup != null) {
-      target.set("choke_group", options.chokeGroup);
-    }
-
-    if (options.mappedPitch != null) {
-      const midiNote = noteNameToMidi(options.mappedPitch);
-
-      if (midiNote != null) {
-        target.set("out_note", midiNote);
-      } else {
-        console.warn(
-          `updateDevice: invalid note name "${options.mappedPitch}"`,
-        );
-      }
-    }
+    updateDrumChainProperties(target, options);
   } else {
     warnIfSet("chokeGroup", options.chokeGroup, type);
     warnIfSet("mappedPitch", options.mappedPitch, type);
   }
+}
+
+/**
+ * Update drum chain properties: choke group and output note
+ * @param target - DrumChain to update
+ * @param options - Update options
+ */
+function updateDrumChainProperties(
+  target: LiveAPI,
+  options: UpdateOptions,
+): void {
+  if (options.chokeGroup != null) {
+    target.set("choke_group", options.chokeGroup);
+  }
+
+  if (options.mappedPitch != null) {
+    const midiNote = noteNameToMidi(options.mappedPitch);
+
+    if (midiNote != null) {
+      target.set("out_note", midiNote);
+    } else {
+      console.warn(`updateDevice: invalid note name "${options.mappedPitch}"`);
+    }
+  }
+}
+
+/**
+ * Apply params on a drum pad or chain to the Simpler it plays, so a pad path
+ * can take `sample=<file>` directly
+ * @param target - DrumPad, DrumChain, or Chain
+ * @param type - Target type
+ * @param params - name=value lines
+ */
+function applyParamsToChainSimpler(
+  target: LiveAPI,
+  type: string,
+  params: string,
+): void {
+  const simpler = findChainSimpler(target);
+
+  if (simpler == null) {
+    console.warn(
+      `updateDevice: 'params' on a ${type} applies to its Simpler, and it has none. Add one with adj-create-device deviceName=Simpler at this path first`,
+    );
+
+    return;
+  }
+
+  setParamValues(simpler, params);
 }
