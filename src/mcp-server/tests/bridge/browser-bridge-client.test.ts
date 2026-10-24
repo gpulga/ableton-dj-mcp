@@ -186,4 +186,44 @@ describe("BrowserBridgeClient", () => {
 
     await expect(promise).rejects.toThrow(/closed/);
   });
+
+  it("endUndoStep sends end_undo_step", async () => {
+    const { client, socket } = makeClient();
+
+    socket.onSend = (msg) => socket.reply({ id: msg.id, ok: true, result: {} });
+
+    await client.endUndoStep();
+
+    expect(socket.sent.map((m) => m.op)).toStrictEqual(["end_undo_step"]);
+  });
+
+  it("isAliveCached remembers a failed ping instead of pinging again", async () => {
+    const { client, socket } = makeClient();
+
+    socket.onSend = (msg) =>
+      socket.reply({
+        id: msg.id,
+        ok: false,
+        error: { code: "MAIN_THREAD_ERROR", message: "down" },
+      });
+
+    expect(await client.isAliveCached()).toBe(false);
+    expect(await client.isAliveCached()).toBe(false);
+    expect(socket.sent).toHaveLength(1);
+  });
+
+  it("isAliveCached reuses a recent successful ping", async () => {
+    const { client, socket } = makeClient();
+
+    socket.onSend = (msg) =>
+      socket.reply({
+        id: msg.id,
+        ok: true,
+        result: { version: "0.1.0", liveVersion: "12.4.0" },
+      });
+
+    expect(await client.isAliveCached()).toBe(true);
+    expect(await client.isAliveCached()).toBe(true);
+    expect(socket.sent).toHaveLength(1);
+  });
 });

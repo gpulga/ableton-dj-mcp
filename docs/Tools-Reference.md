@@ -284,6 +284,10 @@ Control transport, session clips, and Live set history.
 - Response includes `playing`, `currentTime`, optional `arrangementLoop`.
 - For `"undo"` / `"redo"` / `"save"`, response also includes `canUndo` and
   `canRedo` booleans — check these before calling undo/redo to avoid no-ops.
+- With the Live Browser Bridge installed, each tool call that changes the Set is
+  one undo step, so `"undo"` (or Cmd/Ctrl+Z) reverts exactly the last tool call.
+  Without the bridge, Live groups everything since the user last touched Live
+  into one step.
 - For `"record"`, response includes `recording: boolean` reflecting the new
   record-mode state.
 

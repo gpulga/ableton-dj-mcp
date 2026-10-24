@@ -15,7 +15,11 @@ import {
   type AutomationReadResult,
   type AutomationWriteArgs,
   type AutomationWriteResult,
-} from "./bridge-automation-types.ts";
+  type BrowseArgs,
+  type BrowseResult,
+  type LoadItemArgs,
+  type LoadItemResult,
+} from "./bridge-types.ts";
 
 const DEFAULT_HOST = "127.0.0.1";
 const DEFAULT_PORT = 11_077;
@@ -24,6 +28,7 @@ const DEFAULT_LOAD_TIMEOUT_MS = 30_000;
 const DEFAULT_AUTOMATION_WRITE_TIMEOUT_MS = 15_000;
 const DEFAULT_AUTOMATION_TIMEOUT_MS = 10_000;
 const DEFAULT_PING_TIMEOUT_MS = 1_500;
+const DEFAULT_UNDO_STEP_TIMEOUT_MS = 1_000;
 // How long a successful ping is treated as "bridge up". Avoids round-tripping
 // a ping before every browse.
 const PING_FRESHNESS_MS = 30_000;
@@ -71,6 +76,7 @@ interface BridgeRequest {
     | "automation_write"
     | "automation_read"
     | "automation_clear"
+    | "end_undo_step"
     | "shutdown";
   args: Record<string, unknown>;
 }
@@ -92,42 +98,13 @@ export interface PingResult {
   liveVersion: string;
 }
 
-export interface BrowseArgs {
-  category?: string;
-  path?: string;
-  search?: string;
-  depth?: number;
-  limit?: number;
-}
-
-export interface BrowseItem {
-  name: string;
-  uri: string;
-  isFolder: boolean;
-  isDevice: boolean;
-  isLoadable: boolean;
-  children?: BrowseItem[];
-}
-
-export interface BrowseResult {
-  category?: string;
-  categories?: string[];
-  path?: string;
-  items: BrowseItem[];
-  truncated?: boolean;
-}
-
-export interface LoadItemArgs {
-  uri: string;
-  category?: string;
-}
-
-export interface LoadItemResult {
-  loaded: boolean;
-  deviceId: string | null;
-  deviceCountBefore: number;
-  deviceCountAfter: number;
-}
+export type {
+  BrowseArgs,
+  BrowseItem,
+  BrowseResult,
+  LoadItemArgs,
+  LoadItemResult,
+} from "./bridge-types.ts";
 
 export type {
   AutomationClearArgs,
@@ -138,7 +115,7 @@ export type {
   AutomationTarget,
   AutomationWriteArgs,
   AutomationWriteResult,
-} from "./bridge-automation-types.ts";
+} from "./bridge-types.ts";
 
 /**
  * Client for the Python browser bridge. One instance per process; methods are
@@ -152,6 +129,7 @@ export class BrowserBridgeClient {
   private socketReady: Promise<void> | null = null;
   private readonly pending = new Map<string, PendingCall<unknown>>();
   private lastPingOkAt = 0;
+  private lastPingFailedAt = 0;
   private closed = false;
 
   constructor(options: BrowserBridgeClientOptions = {}) {
@@ -190,6 +168,32 @@ export class BrowserBridgeClient {
     } catch {
       return false;
     }
+  }
+
+  /**
+   * Like ensureAlive, but also remembers a failed ping for 30 s, so a caller
+   * that runs on every tool call costs nothing when the bridge isn't installed.
+   * @returns Whether the bridge is currently reachable
+   */
+  async isAliveCached(): Promise<boolean> {
+    if (Date.now() - this.lastPingFailedAt < PING_FRESHNESS_MS) return false;
+
+    const alive = await this.ensureAlive();
+
+    if (!alive) this.lastPingFailedAt = Date.now();
+
+    return alive;
+  }
+
+  /**
+   * Close Live's pending undo step, so everything changed since the last one
+   * undoes as a single step.
+   * @param timeoutMs - Operation timeout in milliseconds
+   */
+  async endUndoStep(
+    timeoutMs: number = DEFAULT_UNDO_STEP_TIMEOUT_MS,
+  ): Promise<void> {
+    await this.send<{ ok: boolean }>("end_undo_step", {}, timeoutMs);
   }
 
   /**

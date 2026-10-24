@@ -14,6 +14,8 @@ interface FakeBridge {
   automationWrite: ReturnType<typeof vi.fn>;
   automationRead: ReturnType<typeof vi.fn>;
   automationClear: ReturnType<typeof vi.fn>;
+  isAliveCached: ReturnType<typeof vi.fn>;
+  endUndoStep: ReturnType<typeof vi.fn>;
 }
 
 function makeFakeBridge(overrides: Partial<FakeBridge> = {}): FakeBridge {
@@ -24,6 +26,8 @@ function makeFakeBridge(overrides: Partial<FakeBridge> = {}): FakeBridge {
     automationWrite: overrides.automationWrite ?? vi.fn(),
     automationRead: overrides.automationRead ?? vi.fn(),
     automationClear: overrides.automationClear ?? vi.fn(),
+    isAliveCached: overrides.isAliveCached ?? vi.fn().mockResolvedValue(false),
+    endUndoStep: overrides.endUndoStep ?? vi.fn().mockResolvedValue(undefined),
   };
 }
 
@@ -223,5 +227,86 @@ describe("makeBridgeDispatcher", () => {
     expect(response.content[0]?.text).toMatch(/path is required/);
     expect(next).not.toHaveBeenCalled();
     expect(bridge.loadItem).not.toHaveBeenCalled();
+  });
+});
+
+describe("makeBridgeDispatcher - one undo step per tool call", () => {
+  const v8Result = { content: [{ type: "text", text: "ok" }] };
+
+  it("closes an undo step after a tool that changes the set", async () => {
+    const bridge = makeFakeBridge({
+      isAliveCached: vi.fn().mockResolvedValue(true),
+    });
+    const next = vi.fn().mockResolvedValue(v8Result);
+    const dispatch = makeBridgeDispatcher(next, asBridge(bridge));
+
+    const response = await dispatch("adj-update-clip", { ids: "1" });
+
+    expect(response).toBe(v8Result);
+    expect(bridge.endUndoStep).toHaveBeenCalledOnce();
+  });
+
+  it("closes the step only after the tool call has finished", async () => {
+    const order: string[] = [];
+    const bridge = makeFakeBridge({
+      isAliveCached: vi.fn().mockResolvedValue(true),
+      endUndoStep: vi.fn(() => {
+        order.push("endUndoStep");
+
+        return Promise.resolve();
+      }),
+    });
+    const next = vi.fn(() => {
+      order.push("tool");
+
+      return Promise.resolve(v8Result);
+    });
+    const dispatch = makeBridgeDispatcher(next, asBridge(bridge));
+
+    await dispatch("adj-create-clip", {});
+
+    expect(order).toStrictEqual(["tool", "endUndoStep"]);
+  });
+
+  it("leaves read-only tools alone", async () => {
+    const bridge = makeFakeBridge({
+      isAliveCached: vi.fn().mockResolvedValue(true),
+    });
+    const dispatch = makeBridgeDispatcher(
+      vi.fn().mockResolvedValue(v8Result),
+      asBridge(bridge),
+    );
+
+    await dispatch("adj-read-track", {});
+    await dispatch("adj-connect", {});
+
+    expect(bridge.isAliveCached).not.toHaveBeenCalled();
+    expect(bridge.endUndoStep).not.toHaveBeenCalled();
+  });
+
+  it("skips grouping when the bridge isn't running", async () => {
+    const bridge = makeFakeBridge();
+    const dispatch = makeBridgeDispatcher(
+      vi.fn().mockResolvedValue(v8Result),
+      asBridge(bridge),
+    );
+
+    const response = await dispatch("adj-update-track", {});
+
+    expect(response).toBe(v8Result);
+    expect(bridge.endUndoStep).not.toHaveBeenCalled();
+  });
+
+  it("never fails the tool call when closing the step fails", async () => {
+    const bridge = makeFakeBridge({
+      isAliveCached: vi.fn().mockResolvedValue(true),
+      endUndoStep: vi.fn().mockRejectedValue(new Error("timeout")),
+    });
+    const dispatch = makeBridgeDispatcher(
+      vi.fn().mockResolvedValue(v8Result),
+      asBridge(bridge),
+    );
+
+    await expect(dispatch("adj-delete", {})).resolves.toBe(v8Result);
   });
 });

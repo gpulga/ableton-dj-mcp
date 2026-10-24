@@ -79,7 +79,8 @@ JSON, UTF-8.
 {
   "id": "req_<uuid4>",
   "op": "browse" | "load_item" | "ping" | "shutdown"
-      | "automation_write" | "automation_read" | "automation_clear",
+      | "automation_write" | "automation_read" | "automation_clear"
+      | "end_undo_step",
   "args": { ... }
 }
 ```
@@ -236,6 +237,17 @@ Shared arg shapes (all beat values are Ableton beats relative to clip time 0):
 Resolution/envelope failures use error code `AUTOMATION_FAILED`. An old bridge
 replies `INVALID_ARGS: unknown op: automation_*`; the Node side maps that to a
 "rerun `npm run install:bridge`" hint.
+
+#### `end_undo_step`
+
+Args `{}` → `{ok: true}`. Calls `Song.end_undo_step()`, which closes Live's
+pending undo step. Live otherwise merges every change since the user last
+touched Live into one step. The Node dispatcher sends it after each tool call
+that can change the Set (everything except `adj-connect`, `adj-browse`,
+`adj-guide`, `adj-context`, `adj-select` and `adj-read-*`), so Cmd/Ctrl+Z and
+`adj-playback action: "undo"` step back one tool call at a time. Best-effort: it
+is skipped when the bridge isn't reachable (a failed ping is cached for 30 s, so
+a set without the bridge pays nothing) and never fails the tool call.
 
 ---
 
