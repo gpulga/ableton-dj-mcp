@@ -9,6 +9,10 @@
 import { formatErrorResponse } from "#src/shared/mcp-response-utils.ts";
 import { handleAutomate } from "#src/tools/clip/automate/automate-handler.ts";
 import {
+  type ConvertTrackArgs,
+  handleConvertClip,
+} from "#src/tools/track/create/convert-clip-handler.ts";
+import {
   BridgeCallError,
   type BrowserBridgeClient,
   INSTALL_HINT,
@@ -50,6 +54,10 @@ export function makeBridgeDispatcher(
 
     if (tool === "adj-automate") {
       return await handleAutomate(bridge, next, args);
+    }
+
+    if (tool === "adj-create-track" && "convert" in args && args.convert) {
+      return await handleConvertClip(bridge, next, args as ConvertTrackArgs);
     }
 
     if (tool === "adj-create-device") {
