@@ -1,5 +1,24 @@
 # Changelog
 
+## [2.6.0](https://github.com/gpulga/ableton-dj-mcp/compare/ableton-dj-mcp-v2.5.0...ableton-dj-mcp-v2.6.0) (2026-10-24)
+
+
+### Features
+
+* browse Places and search sample libraries by name, BPM and key ([#368](https://github.com/gpulga/ableton-dj-mcp/issues/368)) ([70e54be](https://github.com/gpulga/ableton-dj-mcp/commit/70e54bea16f2ac006d9a8da8fa078551ca5e750e))
+* build a track from an audio clip with Live's conversions ([#367](https://github.com/gpulga/ableton-dj-mcp/issues/367)) ([b223dba](https://github.com/gpulga/ableton-dj-mcp/commit/b223dba889442d86e98a98351cda7998395cc3fb))
+* load samples into Simpler and drum pads with adj-update-device ([#355](https://github.com/gpulga/ableton-dj-mcp/issues/355)) ([fb576f9](https://github.com/gpulga/ableton-dj-mcp/commit/fb576f9554bb5b89db6abd6297343285e0d249aa)), closes [#94](https://github.com/gpulga/ableton-dj-mcp/issues/94)
+* make each tool call one undo step ([#357](https://github.com/gpulga/ableton-dj-mcp/issues/357)) ([0789956](https://github.com/gpulga/ableton-dj-mcp/commit/0789956a3431ef7216049f7c6926c998b914a9d5))
+* write automation in display units and read back what Live shows ([#369](https://github.com/gpulga/ableton-dj-mcp/issues/369)) ([460668f](https://github.com/gpulga/ableton-dj-mcp/commit/460668f8c40f8d0a80cb402c8d2f019fd43da917))
+
+
+### Bug Fixes
+
+* apply clip start and loop marker writes in an order Live accepts ([#356](https://github.com/gpulga/ableton-dj-mcp/issues/356)) ([030a8b9](https://github.com/gpulga/ableton-dj-mcp/commit/030a8b9ce32064bfa8ad4efeebcc94078bc16387)), closes [#349](https://github.com/gpulga/ableton-dj-mcp/issues/349)
+* arm a track after its routing and monitoring changes ([#360](https://github.com/gpulga/ableton-dj-mcp/issues/360)) ([e735dec](https://github.com/gpulga/ableton-dj-mcp/commit/e735decccd3a8712bbb778de3d92d2556898dab4)), closes [#352](https://github.com/gpulga/ableton-dj-mcp/issues/352)
+* report clips an arrangement write overwrites and cap clip tiling ([#359](https://github.com/gpulga/ableton-dj-mcp/issues/359)) ([7f312c1](https://github.com/gpulga/ableton-dj-mcp/commit/7f312c1db0a2b7f7d97dd00655bb5edb55085a0b))
+* warn when a device write overrides automation ([#361](https://github.com/gpulga/ableton-dj-mcp/issues/361)) ([ca7d2b1](https://github.com/gpulga/ableton-dj-mcp/commit/ca7d2b1cb5b077c2a86237ca0fab49ac54ce6d59))
+
 ## [2.5.0](https://github.com/gpulga/ableton-dj-mcp/compare/ableton-dj-mcp-v2.4.1...ableton-dj-mcp-v2.5.0) (2026-09-23)
 
 
