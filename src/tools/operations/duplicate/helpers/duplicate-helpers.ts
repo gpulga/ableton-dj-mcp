@@ -16,6 +16,10 @@ import {
   clearClipAtDuplicateTarget,
   moveClipFromHolding,
 } from "#src/tools/shared/arrangement/arrangement-tiling-workaround.ts";
+import {
+  snapshotArrangementTrack,
+  warnArrangementWriteEffects,
+} from "#src/tools/shared/arrangement/arrangement-write-effects.ts";
 import { toLiveApiId } from "#src/tools/shared/utils.ts";
 import { formatSlot } from "#src/tools/shared/validation/position-parsing.ts";
 
@@ -379,6 +383,7 @@ export async function duplicateClipToArrangement(
 
   const track = LiveAPI.from(livePath.track(trackIndex));
   const duplicatedClips: MinimalClipInfo[] = [];
+  const before = snapshotArrangementTrack(trackIndex);
 
   if (arrangementLength != null) {
     // Use the clip's time signature for duration calculation
@@ -428,6 +433,11 @@ export async function duplicateClipToArrangement(
 
     duplicatedClips.push(getMinimalClipInfo(newClip));
   }
+
+  warnArrangementWriteEffects(
+    before,
+    duplicatedClips.map((info) => info.id),
+  );
 
   // Return single clip info directly, or clips array with trackIndex for multiple
   if (duplicatedClips.length === 1) {
