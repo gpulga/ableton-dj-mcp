@@ -1,5 +1,26 @@
 # Changelog
 
+## [2.7.0](https://github.com/gpulga/ableton-dj-mcp/compare/ableton-dj-mcp-v2.6.0...ableton-dj-mcp-v2.7.0) (2026-10-25)
+
+
+### Features
+
+* accept a start, length and firstStart per clip in adj-update-clip ([#377](https://github.com/gpulga/ableton-dj-mcp/issues/377)) ([34b0327](https://github.com/gpulga/ableton-dj-mcp/commit/34b0327f25f4beb063042bb7a6218eb1c39ad96a)), closes [#371](https://github.com/gpulga/ableton-dj-mcp/issues/371)
+* lay a looping session clip into the arrangement as one clip ([#381](https://github.com/gpulga/ableton-dj-mcp/issues/381)) ([a38aacb](https://github.com/gpulga/ableton-dj-mcp/commit/a38aacb581b8cbda4a64a18b55a570090dd78ce3)), closes [#350](https://github.com/gpulga/ableton-dj-mcp/issues/350)
+
+
+### Bug Fixes
+
+* point the connection error at the setup guide that exists ([#378](https://github.com/gpulga/ableton-dj-mcp/issues/378)) ([e919893](https://github.com/gpulga/ableton-dj-mcp/commit/e919893d26f69291d4a4acab7add87b1cf41701b))
+* round bar|beat positions before splitting them at the bar line ([#375](https://github.com/gpulga/ableton-dj-mcp/issues/375)) ([49d139c](https://github.com/gpulga/ableton-dj-mcp/commit/49d139ca814508e40060d14a10c19256ce64fa20)), closes [#364](https://github.com/gpulga/ableton-dj-mcp/issues/364)
+* split arrangement clips at song positions ([#380](https://github.com/gpulga/ableton-dj-mcp/issues/380)) ([ccbd44c](https://github.com/gpulga/ableton-dj-mcp/commit/ccbd44c9bf044b26af8285247fb979d25fc93cec)), closes [#371](https://github.com/gpulga/ableton-dj-mcp/issues/371)
+* time-ranged ramp and curve use musical beats in every time signature ([#374](https://github.com/gpulga/ableton-dj-mcp/issues/374)) ([c2fb988](https://github.com/gpulga/ableton-dj-mcp/commit/c2fb9881a3d66fd7c6be7214aebb1ddd424b3cfd)), closes [#365](https://github.com/gpulga/ableton-dj-mcp/issues/365)
+
+
+### Performance Improvements
+
+* **tokens:** serve the transforms reference on demand via adj-guide ([#383](https://github.com/gpulga/ableton-dj-mcp/issues/383)) ([5467a64](https://github.com/gpulga/ableton-dj-mcp/commit/5467a6409cbbea0b6338460576f5c0fd94c61a43)), closes [#334](https://github.com/gpulga/ableton-dj-mcp/issues/334)
+
 ## [2.6.0](https://github.com/gpulga/ableton-dj-mcp/compare/ableton-dj-mcp-v2.5.0...ableton-dj-mcp-v2.6.0) (2026-10-24)
 
 
