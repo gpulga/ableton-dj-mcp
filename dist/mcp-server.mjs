@@ -715,15 +715,15 @@ import require$$0$6 from "buffer";
 
 import require$$1$3 from "string_decoder";
 
-import require$$4$1 from "node:zlib";
+import require$$4$1, { deflateSync } from "node:zlib";
 
 import require$$1$6 from "node:events";
 
 import require$$0$7 from "url";
 
-import require$$8 from "node:path";
+import require$$8, { extname } from "node:path";
 
-import fs from "node:fs";
+import fs, { existsSync } from "node:fs";
 
 import require$$2$1 from "node:http";
 
@@ -739,12 +739,16 @@ import crypto$1, { randomUUID } from "node:crypto";
 
 import { createSocket } from "node:dgram";
 
+import { execFile } from "node:child_process";
+
+import { readFile } from "node:fs/promises";
+
 import os from "node:os";
 
 const BUILD_INFO = {
   branch: "release-please--branches--main--components--ableton-dj-mcp",
-  sha: "e64401d4",
-  buildTime: "2026-10-25T17:54:58.623Z"
+  sha: "157c23b5",
+  buildTime: "2026-10-25T19:58:34.524Z"
 };
 
 function buildIdentifier() {
@@ -809,7 +813,7 @@ function hasPreReleaseSuffix(version) {
   return cleaned.includes("-");
 }
 
-const VERSION = "2.7.0";
+const VERSION = "2.8.0";
 
 var RequestError = class extends Error {
   constructor(message, options) {
@@ -6533,7 +6537,7 @@ const ZodRecord = $constructor("ZodRecord", (inst, def) => {
   inst.valueType = def.valueType;
 });
 
-function record(keyType, valueType, params) {
+function record$1(keyType, valueType, params) {
   if (!valueType || !valueType._zod) {
     return new ZodRecord({
       type: "record",
@@ -6993,7 +6997,7 @@ const ImplementationSchema = BaseMetadataSchema.extend({
 
 const FormElicitationCapabilitySchema = intersection(object$1({
   applyDefaults: boolean().optional()
-}), record(string$1(), unknown()));
+}), record$1(string$1(), unknown()));
 
 const ElicitationCapabilitySchema = preprocess(value => {
   if (value && typeof value === "object" && !Array.isArray(value)) {
@@ -7007,7 +7011,7 @@ const ElicitationCapabilitySchema = preprocess(value => {
 }, intersection(object$1({
   form: FormElicitationCapabilitySchema.optional(),
   url: AssertObjectSchema.optional()
-}), record(string$1(), unknown()).optional()));
+}), record$1(string$1(), unknown()).optional()));
 
 const ClientTasksCapabilitySchema = looseObject({
   list: AssertObjectSchema.optional(),
@@ -7033,7 +7037,7 @@ const ServerTasksCapabilitySchema = looseObject({
 });
 
 const ClientCapabilitiesSchema = object$1({
-  experimental: record(string$1(), AssertObjectSchema).optional(),
+  experimental: record$1(string$1(), AssertObjectSchema).optional(),
   sampling: object$1({
     context: AssertObjectSchema.optional(),
     tools: AssertObjectSchema.optional()
@@ -7043,7 +7047,7 @@ const ClientCapabilitiesSchema = object$1({
     listChanged: boolean().optional()
   }).optional(),
   tasks: ClientTasksCapabilitySchema.optional(),
-  extensions: record(string$1(), AssertObjectSchema).optional()
+  extensions: record$1(string$1(), AssertObjectSchema).optional()
 });
 
 const InitializeRequestParamsSchema = BaseRequestParamsSchema.extend({
@@ -7060,7 +7064,7 @@ const InitializeRequestSchema = RequestSchema.extend({
 const isInitializeRequest = value => InitializeRequestSchema.safeParse(value).success;
 
 const ServerCapabilitiesSchema = object$1({
-  experimental: record(string$1(), AssertObjectSchema).optional(),
+  experimental: record$1(string$1(), AssertObjectSchema).optional(),
   logging: AssertObjectSchema.optional(),
   completions: AssertObjectSchema.optional(),
   prompts: object$1({
@@ -7074,7 +7078,7 @@ const ServerCapabilitiesSchema = object$1({
     listChanged: boolean().optional()
   }).optional(),
   tasks: ServerTasksCapabilitySchema.optional(),
-  extensions: record(string$1(), AssertObjectSchema).optional()
+  extensions: record$1(string$1(), AssertObjectSchema).optional()
 });
 
 const InitializeResultSchema = ResultSchema.extend({
@@ -7184,7 +7188,7 @@ const CancelTaskResultSchema = ResultSchema.merge(TaskSchema);
 const ResourceContentsSchema = object$1({
   uri: string$1(),
   mimeType: optional(string$1()),
-  _meta: record(string$1(), unknown()).optional()
+  _meta: record$1(string$1(), unknown()).optional()
 });
 
 const TextResourceContentsSchema = ResourceContentsSchema.extend({
@@ -7320,7 +7324,7 @@ const ListPromptsResultSchema = PaginatedResultSchema.extend({
 
 const GetPromptRequestParamsSchema = BaseRequestParamsSchema.extend({
   name: string$1(),
-  arguments: record(string$1(), string$1()).optional()
+  arguments: record$1(string$1(), string$1()).optional()
 });
 
 const GetPromptRequestSchema = RequestSchema.extend({
@@ -7332,7 +7336,7 @@ const TextContentSchema = object$1({
   type: literal("text"),
   text: string$1(),
   annotations: AnnotationsSchema.optional(),
-  _meta: record(string$1(), unknown()).optional()
+  _meta: record$1(string$1(), unknown()).optional()
 });
 
 const ImageContentSchema = object$1({
@@ -7340,7 +7344,7 @@ const ImageContentSchema = object$1({
   data: Base64Schema,
   mimeType: string$1(),
   annotations: AnnotationsSchema.optional(),
-  _meta: record(string$1(), unknown()).optional()
+  _meta: record$1(string$1(), unknown()).optional()
 });
 
 const AudioContentSchema = object$1({
@@ -7348,22 +7352,22 @@ const AudioContentSchema = object$1({
   data: Base64Schema,
   mimeType: string$1(),
   annotations: AnnotationsSchema.optional(),
-  _meta: record(string$1(), unknown()).optional()
+  _meta: record$1(string$1(), unknown()).optional()
 });
 
 const ToolUseContentSchema = object$1({
   type: literal("tool_use"),
   name: string$1(),
   id: string$1(),
-  input: record(string$1(), unknown()),
-  _meta: record(string$1(), unknown()).optional()
+  input: record$1(string$1(), unknown()),
+  _meta: record$1(string$1(), unknown()).optional()
 });
 
 const EmbeddedResourceSchema = object$1({
   type: literal("resource"),
   resource: union([ TextResourceContentsSchema, BlobResourceContentsSchema ]),
   annotations: AnnotationsSchema.optional(),
-  _meta: record(string$1(), unknown()).optional()
+  _meta: record$1(string$1(), unknown()).optional()
 });
 
 const ResourceLinkSchema = ResourceSchema.extend({
@@ -7405,17 +7409,17 @@ const ToolSchema = object$1({
   description: string$1().optional(),
   inputSchema: object$1({
     type: literal("object"),
-    properties: record(string$1(), AssertObjectSchema).optional(),
+    properties: record$1(string$1(), AssertObjectSchema).optional(),
     required: array(string$1()).optional()
   }).catchall(unknown()),
   outputSchema: object$1({
     type: literal("object"),
-    properties: record(string$1(), AssertObjectSchema).optional(),
+    properties: record$1(string$1(), AssertObjectSchema).optional(),
     required: array(string$1()).optional()
   }).catchall(unknown()).optional(),
   annotations: ToolAnnotationsSchema.optional(),
   execution: ToolExecutionSchema.optional(),
-  _meta: record(string$1(), unknown()).optional()
+  _meta: record$1(string$1(), unknown()).optional()
 });
 
 const ListToolsRequestSchema = PaginatedRequestSchema.extend({
@@ -7428,7 +7432,7 @@ const ListToolsResultSchema = PaginatedResultSchema.extend({
 
 const CallToolResultSchema = ResultSchema.extend({
   content: array(ContentBlockSchema).default([]),
-  structuredContent: record(string$1(), unknown()).optional(),
+  structuredContent: record$1(string$1(), unknown()).optional(),
   isError: boolean().optional()
 });
 
@@ -7438,7 +7442,7 @@ CallToolResultSchema.or(ResultSchema.extend({
 
 const CallToolRequestParamsSchema = TaskAugmentedRequestParamsSchema.extend({
   name: string$1(),
-  arguments: record(string$1(), unknown()).optional()
+  arguments: record$1(string$1(), unknown()).optional()
 });
 
 const CallToolRequestSchema = RequestSchema.extend({
@@ -7499,7 +7503,7 @@ const ToolResultContentSchema = object$1({
   content: array(ContentBlockSchema).default([]),
   structuredContent: object$1({}).loose().optional(),
   isError: boolean().optional(),
-  _meta: record(string$1(), unknown()).optional()
+  _meta: record$1(string$1(), unknown()).optional()
 });
 
 const SamplingContentSchema = discriminatedUnion("type", [ TextContentSchema, ImageContentSchema, AudioContentSchema ]);
@@ -7509,7 +7513,7 @@ const SamplingMessageContentBlockSchema = discriminatedUnion("type", [ TextConte
 const SamplingMessageSchema = object$1({
   role: RoleSchema,
   content: union([ SamplingMessageContentBlockSchema, array(SamplingMessageContentBlockSchema) ]),
-  _meta: record(string$1(), unknown()).optional()
+  _meta: record$1(string$1(), unknown()).optional()
 });
 
 const CreateMessageRequestParamsSchema = TaskAugmentedRequestParamsSchema.extend({
@@ -7639,7 +7643,7 @@ const ElicitRequestFormParamsSchema = TaskAugmentedRequestParamsSchema.extend({
   message: string$1(),
   requestedSchema: object$1({
     type: literal("object"),
-    properties: record(string$1(), PrimitiveSchemaDefinitionSchema),
+    properties: record$1(string$1(), PrimitiveSchemaDefinitionSchema),
     required: array(string$1()).optional()
   })
 });
@@ -7669,7 +7673,7 @@ const ElicitationCompleteNotificationSchema = NotificationSchema.extend({
 
 const ElicitResultSchema = ResultSchema.extend({
   action: _enum$2([ "accept", "decline", "cancel" ]),
-  content: preprocess(val => val === null ? undefined : val, record(string$1(), union([ string$1(), number$1(), boolean(), array(string$1()) ])).optional())
+  content: preprocess(val => val === null ? undefined : val, record$1(string$1(), union([ string$1(), number$1(), boolean(), array(string$1()) ])).optional())
 });
 
 const ResourceTemplateReferenceSchema = object$1({
@@ -7689,7 +7693,7 @@ const CompleteRequestParamsSchema = BaseRequestParamsSchema.extend({
     value: string$1()
   }),
   context: object$1({
-    arguments: record(string$1(), string$1()).optional()
+    arguments: record$1(string$1(), string$1()).optional()
   }).optional()
 });
 
@@ -7721,7 +7725,7 @@ const CompleteResultSchema = ResultSchema.extend({
 const RootSchema = object$1({
   uri: string$1().startsWith("file://"),
   name: string$1().optional(),
-  _meta: record(string$1(), unknown()).optional()
+  _meta: record$1(string$1(), unknown()).optional()
 });
 
 const ListRootsRequestSchema = RequestSchema.extend({
@@ -23629,15 +23633,15 @@ function requirePow() {
   return pow;
 }
 
-var round$1;
+var round$2;
 
 var hasRequiredRound;
 
 function requireRound() {
-  if (hasRequiredRound) return round$1;
+  if (hasRequiredRound) return round$2;
   hasRequiredRound = 1;
-  round$1 = Math.round;
-  return round$1;
+  round$2 = Math.round;
+  return round$2;
 }
 
 var _isNaN;
@@ -31749,7 +31753,7 @@ async function runAction(bridge, action, args, clipInfo) {
     });
     return formatSuccessResponse({
       ...result,
-      points: result.points.map(([timeBeats, value]) => `${abletonBeatsToBarBeat(timeBeats, clipInfo.timeSigNumerator, clipInfo.timeSigDenominator)}:${round(value)}`)
+      points: result.points.map(([timeBeats, value]) => `${abletonBeatsToBarBeat(timeBeats, clipInfo.timeSigNumerator, clipInfo.timeSigDenominator)}:${round$1(value)}`)
     });
   }
   const anchors = args.recipe == null ? await resolveAnchorValues(bridge, clipInfo, target, args) : void 0;
@@ -31914,8 +31918,1266 @@ function formatAutomateError(err) {
   return `automate failed: ${String(err)}`;
 }
 
-function round(value) {
+function round$1(value) {
   return Math.round(value * 1e3) / 1e3;
+}
+
+const WAVE_FORMAT_PCM = 1;
+
+const WAVE_FORMAT_IEEE_FLOAT = 3;
+
+const WAVE_FORMAT_EXTENSIBLE = 65534;
+
+function decodeAudio(buffer) {
+  const view = new DataView(buffer.buffer, buffer.byteOffset, buffer.length);
+  const magic = readTag(view, 0);
+  if (magic === "RIFF" || magic === "RF64") return decodeWav(view);
+  if (magic === "FORM") return decodeAiff(view);
+  throw new Error("unsupported audio file (expected WAV or AIFF)");
+}
+
+function decodeWav(view) {
+  if (readTag(view, 8) !== "WAVE") throw new Error("not a WAVE file");
+  let format = null;
+  let offset = 12;
+  while (offset + 8 <= view.byteLength) {
+    const id = readTag(view, offset);
+    const size = view.getUint32(offset + 4, true);
+    const body = offset + 8;
+    if (id === "fmt ") {
+      format = parseWavFormat(view, body);
+    } else if (id === "data") {
+      if (format == null) throw new Error("WAV data before fmt chunk");
+      const end = size === 0 || size === 4294967295 ? view.byteLength : body + size;
+      return readFrames(view, body, Math.min(end, view.byteLength), format);
+    }
+    offset = body + size + size % 2;
+  }
+  throw new Error("WAV file has no data chunk");
+}
+
+function parseWavFormat(view, body) {
+  let tag = view.getUint16(body, true);
+  const bitsPerSample = view.getUint16(body + 14, true);
+  if (tag === WAVE_FORMAT_EXTENSIBLE) {
+    tag = view.getUint16(body + 24, true);
+  }
+  if (tag !== WAVE_FORMAT_PCM && tag !== WAVE_FORMAT_IEEE_FLOAT) {
+    throw new Error(`unsupported WAV encoding (format tag ${tag})`);
+  }
+  return {
+    channelCount: view.getUint16(body + 2, true),
+    sampleRate: view.getUint32(body + 4, true),
+    bitsPerSample: bitsPerSample,
+    isFloat: tag === WAVE_FORMAT_IEEE_FLOAT,
+    littleEndian: true
+  };
+}
+
+function decodeAiff(view) {
+  const formType = readTag(view, 8);
+  if (formType !== "AIFF" && formType !== "AIFC") {
+    throw new Error("not an AIFF file");
+  }
+  let format = null;
+  let offset = 12;
+  while (offset + 8 <= view.byteLength) {
+    const id = readTag(view, offset);
+    const size = view.getUint32(offset + 4, false);
+    const body = offset + 8;
+    if (id === "COMM") {
+      format = parseAiffFormat(view, body, formType === "AIFC");
+    } else if (id === "SSND") {
+      if (format == null) throw new Error("AIFF sound data before COMM chunk");
+      const dataStart = body + 8 + view.getUint32(body, false);
+      return readFrames(view, dataStart, Math.min(body + size, view.byteLength), format);
+    }
+    offset = body + size + size % 2;
+  }
+  throw new Error("AIFF file has no SSND chunk");
+}
+
+function parseAiffFormat(view, body, isAifc) {
+  const format = {
+    channelCount: view.getUint16(body, false),
+    sampleRate: readExtended80(view, body + 8),
+    bitsPerSample: view.getUint16(body + 6, false),
+    isFloat: false,
+    littleEndian: false
+  };
+  if (isAifc) {
+    const compression = readTag(view, body + 18);
+    if (compression === "sowt") {
+      format.littleEndian = true;
+    } else if (compression === "fl32" || compression === "FL32") {
+      format.isFloat = true;
+      format.bitsPerSample = 32;
+    } else if (compression !== "NONE") {
+      throw new Error(`unsupported AIFC compression "${compression}"`);
+    }
+  }
+  return format;
+}
+
+function readFrames(view, start, end, format) {
+  const {channelCount: channelCount, bitsPerSample: bitsPerSample} = format;
+  const bytesPerSample = bitsPerSample / 8;
+  if (channelCount < 1 || !Number.isInteger(bytesPerSample)) {
+    throw new Error(`unsupported sample layout (${channelCount} ch, ${bitsPerSample} bit)`);
+  }
+  const readSample = sampleReader(format);
+  const frameBytes = bytesPerSample * channelCount;
+  const frameCount = Math.floor((end - start) / frameBytes);
+  const channels = Array.from({
+    length: channelCount
+  }, () => new Float32Array(frameCount));
+  for (let frame = 0; frame < frameCount; frame++) {
+    const frameStart = start + frame * frameBytes;
+    for (let ch = 0; ch < channelCount; ch++) {
+      channels[ch][frame] = readSample(view, frameStart + ch * bytesPerSample);
+    }
+  }
+  return {
+    sampleRate: format.sampleRate,
+    channels: channels
+  };
+}
+
+function sampleReader({bitsPerSample: bitsPerSample, isFloat: isFloat, littleEndian: le}) {
+  if (isFloat) {
+    if (bitsPerSample === 32) return (v, o) => v.getFloat32(o, le);
+    if (bitsPerSample === 64) return (v, o) => v.getFloat64(o, le);
+  } else {
+    switch (bitsPerSample) {
+     case 8:
+      return le ? (v, o) => (v.getUint8(o) - 128) / 128 : (v, o) => v.getInt8(o) / 128;
+
+     case 16:
+      return (v, o) => v.getInt16(o, le) / 32768;
+
+     case 24:
+      return (v, o) => read24(v, o, le) / 8388608;
+
+     case 32:
+      return (v, o) => v.getInt32(o, le) / 2147483648;
+    }
+  }
+  throw new Error(`unsupported bit depth ${bitsPerSample}${isFloat ? " float" : ""}`);
+}
+
+function read24(view, offset, littleEndian) {
+  const b0 = view.getUint8(offset);
+  const b1 = view.getUint8(offset + 1);
+  const b2 = view.getUint8(offset + 2);
+  const unsigned = littleEndian ? b0 | b1 << 8 | b2 << 16 : b0 << 16 | b1 << 8 | b2;
+  return unsigned & 8388608 ? unsigned - 16777216 : unsigned;
+}
+
+function readExtended80(view, offset) {
+  const exponent = view.getUint16(offset, false) & 32767;
+  const hi = view.getUint32(offset + 2, false);
+  const lo = view.getUint32(offset + 6, false);
+  const mantissa = hi * 2 ** 32 + lo;
+  return mantissa * 2 ** (exponent - 16383 - 63);
+}
+
+function readTag(view, offset) {
+  if (offset + 4 > view.byteLength) return "";
+  return String.fromCodePoint(view.getUint8(offset), view.getUint8(offset + 1), view.getUint8(offset + 2), view.getUint8(offset + 3));
+}
+
+const NATIVE_EXTENSIONS = new Set([ ".wav", ".aif", ".aiff", ".aifc" ]);
+
+const FFMPEG_CANDIDATES = [ "/opt/homebrew/bin/ffmpeg", "/usr/local/bin/ffmpeg", "/usr/bin/ffmpeg", String.raw`C:\ffmpeg\bin\ffmpeg.exe` ];
+
+const FFMPEG_SAMPLE_RATE = 44100;
+
+const FFMPEG_MAX_BUFFER = 1024 * 1024 * 1024;
+
+async function readAudioFile(filePath, ffmpegCandidates = FFMPEG_CANDIDATES) {
+  if (!existsSync(filePath)) {
+    throw new Error(`audio file not found: ${filePath}`);
+  }
+  if (NATIVE_EXTENSIONS.has(extname(filePath).toLowerCase())) {
+    return decodeAudio(await readFile(filePath));
+  }
+  const ffmpeg = findFfmpeg(ffmpegCandidates);
+  if (ffmpeg == null) {
+    throw new Error(`can't decode ${extname(filePath)} without ffmpeg. Install ffmpeg or use a WAV/AIFF file`);
+  }
+  return await decodeWithFfmpeg(ffmpeg, filePath);
+}
+
+function findFfmpeg(candidates = FFMPEG_CANDIDATES) {
+  return candidates.find(candidate => existsSync(candidate)) ?? null;
+}
+
+function decodeWithFfmpeg(ffmpeg, filePath) {
+  const args = [ "-v", "error", "-i", filePath, "-f", "f32le", "-ac", "2", "-ar", String(FFMPEG_SAMPLE_RATE), "pipe:1" ];
+  return new Promise((resolve, reject) => {
+    execFile(ffmpeg, args, {
+      encoding: "buffer",
+      maxBuffer: FFMPEG_MAX_BUFFER
+    }, (error, stdout) => {
+      if (error) {
+        reject(new Error(`ffmpeg failed to decode ${filePath}: ${error.message}`));
+        return;
+      }
+      resolve(deinterleaveStereo(stdout));
+    });
+  });
+}
+
+function deinterleaveStereo(bytes) {
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.length);
+  const frames = Math.floor(bytes.length / 8);
+  const left = new Float32Array(frames);
+  const right = new Float32Array(frames);
+  for (let i = 0; i < frames; i++) {
+    left[i] = view.getFloat32(i * 8, true);
+    right[i] = view.getFloat32(i * 8 + 4, true);
+  }
+  return {
+    sampleRate: FFMPEG_SAMPLE_RATE,
+    channels: [ left, right ]
+  };
+}
+
+function fftInPlace(re, im) {
+  const n = re.length;
+  if (n === 0 || (n & n - 1) !== 0) {
+    throw new Error(`FFT size must be a power of two (got ${n})`);
+  }
+  for (let i = 1, j = 0; i < n; i++) {
+    let bit = n >> 1;
+    for (;j & bit; bit >>= 1) j ^= bit;
+    j ^= bit;
+    if (i < j) {
+      swap(re, i, j);
+      swap(im, i, j);
+    }
+  }
+  const {cos: cos, sin: sin} = twiddles(n);
+  for (let size = 2; size <= n; size <<= 1) {
+    const half = size >> 1;
+    const stride = n / size;
+    for (let start = 0; start < n; start += size) {
+      for (let k = 0; k < half; k++) {
+        const wr = cos[k * stride];
+        const wi = sin[k * stride];
+        const a = start + k;
+        const b = a + half;
+        const reA = re[a];
+        const imA = im[a];
+        const reB = re[b];
+        const imB = im[b];
+        const br = reB * wr - imB * wi;
+        const bi = reB * wi + imB * wr;
+        re[b] = reA - br;
+        im[b] = imA - bi;
+        re[a] = reA + br;
+        im[a] = imA + bi;
+      }
+    }
+  }
+}
+
+function hannWindow(size) {
+  const window = new Float64Array(size);
+  for (let i = 0; i < size; i++) {
+    window[i] = .5 - .5 * Math.cos(2 * Math.PI * i / size);
+  }
+  return window;
+}
+
+function framePowerSpectrum(samples, start, window) {
+  const size = window.length;
+  const re = new Float64Array(size);
+  const im = new Float64Array(size);
+  let windowSum = 0;
+  for (let i = 0; i < size; i++) {
+    const w = at(window, i);
+    re[i] = (samples[start + i] ?? 0) * w;
+    windowSum += w;
+  }
+  fftInPlace(re, im);
+  const bins = size / 2 + 1;
+  const power = new Float64Array(bins);
+  const scale = (2 / windowSum) ** 2;
+  for (let k = 0; k < bins; k++) {
+    power[k] = (at(re, k) ** 2 + at(im, k) ** 2) * scale;
+  }
+  return power;
+}
+
+function at(array, index) {
+  return array[index] ?? 0;
+}
+
+const twiddleCache = new Map;
+
+function twiddles(n) {
+  let table = twiddleCache.get(n);
+  if (table == null) {
+    const cos = new Float64Array(n / 2);
+    const sin = new Float64Array(n / 2);
+    for (let k = 0; k < n / 2; k++) {
+      cos[k] = Math.cos(-2 * Math.PI * k / n);
+      sin[k] = Math.sin(-2 * Math.PI * k / n);
+    }
+    table = {
+      cos: cos,
+      sin: sin
+    };
+    twiddleCache.set(n, table);
+  }
+  return table;
+}
+
+function swap(array, i, j) {
+  const tmp = at(array, i);
+  array[i] = at(array, j);
+  array[j] = tmp;
+}
+
+const PITCH_FRAME_SIZE = 16384;
+
+const PITCH_HOP_SIZE = 8192;
+
+const PITCH_CLASS_NAMES = [ "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" ];
+
+const CHROMA_RANGE = {
+  lowHz: 55,
+  highHz: 4e3
+};
+
+const BASS_RANGE = {
+  lowHz: 30,
+  highHz: 250
+};
+
+function computePitchFrames(mono, sampleRate) {
+  const window = hannWindow(PITCH_FRAME_SIZE);
+  const frameCount = Math.max(1, Math.ceil(mono.length / PITCH_HOP_SIZE));
+  const binHz = sampleRate / PITCH_FRAME_SIZE;
+  const pitchClassOf = pitchClassMap(binHz);
+  const chromaBins = binsFor(CHROMA_RANGE, binHz);
+  const bassBins = binsFor(BASS_RANGE, binHz);
+  const frames = {
+    frameCount: frameCount,
+    times: new Float64Array(frameCount),
+    chroma: [],
+    bassChroma: []
+  };
+  for (let f = 0; f < frameCount; f++) {
+    const start = f * PITCH_HOP_SIZE - PITCH_FRAME_SIZE / 2;
+    const power = framePowerSpectrum(mono, start, window);
+    frames.times[f] = f * PITCH_HOP_SIZE / sampleRate;
+    frames.chroma.push(foldToChroma(power, pitchClassOf, chromaBins));
+    frames.bassChroma.push(foldToChroma(power, pitchClassOf, bassBins));
+  }
+  return frames;
+}
+
+function topPitchClasses(chroma, count, minShare = .5) {
+  const max = Math.max(...chroma);
+  if (!(max > 0)) return [];
+  return [ ...chroma.keys() ].filter(pc => at(chroma, pc) >= max * minShare).sort((a, b) => at(chroma, b) - at(chroma, a)).slice(0, count).map(pc => PITCH_CLASS_NAMES[pc]);
+}
+
+function binsFor(range, binHz) {
+  return [ Math.ceil(range.lowHz / binHz), Math.ceil(range.highHz / binHz) ];
+}
+
+function pitchClassMap(binHz) {
+  const map = new Int8Array(PITCH_FRAME_SIZE / 2 + 1);
+  for (let k = 1; k < map.length; k++) {
+    const midi = Math.round(12 * Math.log2(k * binHz / 440) + 69);
+    map[k] = (midi % 12 + 12) % 12;
+  }
+  return map;
+}
+
+function foldToChroma(power, pitchClassOf, [lo, hi]) {
+  const chroma = new Float64Array(12);
+  for (let k = lo; k < hi; k++) {
+    const pc = pitchClassOf[k] ?? 0;
+    chroma[pc] = at(chroma, pc) + Math.sqrt(at(power, k));
+  }
+  return chroma;
+}
+
+const MAJOR_PROFILE = [ 6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88 ];
+
+const MINOR_PROFILE = [ 6.33, 2.68, 3.52, 5.38, 2.6, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17 ];
+
+function estimateKey(chroma) {
+  if (!chroma.some(value => value > 0)) return null;
+  let best = {
+    key: "",
+    confidence: Number.NEGATIVE_INFINITY
+  };
+  for (let tonic = 0; tonic < 12; tonic++) {
+    for (const [mode, profile] of [ [ "major", MAJOR_PROFILE ], [ "minor", MINOR_PROFILE ] ]) {
+      const r = correlation(chroma, profile, tonic);
+      if (r > best.confidence) {
+        best = {
+          key: `${PITCH_CLASS_NAMES[tonic]} ${mode}`,
+          confidence: r
+        };
+      }
+    }
+  }
+  return best;
+}
+
+function correlation(chroma, profile, tonic) {
+  const rotated = Array.from({
+    length: 12
+  }, (_, i) => profile[(i - tonic + 12) % 12] ?? 0);
+  const meanX = chroma.reduce((s, v) => s + v, 0) / 12;
+  const meanY = rotated.reduce((s, v) => s + v, 0) / 12;
+  let xy = 0;
+  let xx = 0;
+  let yy = 0;
+  for (let i = 0; i < 12; i++) {
+    const dx = at(chroma, i) - meanX;
+    const dy = (rotated[i] ?? 0) - meanY;
+    xy += dx * dy;
+    xx += dx * dx;
+    yy += dy * dy;
+  }
+  return xx > 0 ? xy / Math.sqrt(xx * yy) : 0;
+}
+
+const BLOCK_SECONDS = .4;
+
+const SHORT_TERM_SECONDS = 3;
+
+const STEP_SECONDS = .1;
+
+const ABSOLUTE_GATE_LUFS = -70;
+
+const LUFS_OFFSET = -.691;
+
+const SILENCE_DB = -120;
+
+function kWeight(samples, sampleRate) {
+  return applyBiquad(applyBiquad(samples, shelfFilter(sampleRate)), highPassFilter(sampleRate));
+}
+
+function meanSquareToLufs(meanSquare) {
+  return meanSquare > 0 ? LUFS_OFFSET + 10 * Math.log10(meanSquare) : SILENCE_DB;
+}
+
+function channelMeanSquare(channels, start, end) {
+  const length = end - start;
+  if (length <= 0) return 0;
+  let sum = 0;
+  for (const channel of channels) {
+    let acc = 0;
+    for (let i = start; i < end; i++) {
+      const sample = channel[i] ?? 0;
+      acc += sample * sample;
+    }
+    sum += acc / length;
+  }
+  return sum;
+}
+
+function integratedLoudness(weighted, sampleRate) {
+  const blocks = blockMeanSquares(weighted, sampleRate, BLOCK_SECONDS);
+  return gatedMean(blocks, -10);
+}
+
+function loudnessRange(weighted, sampleRate) {
+  const blocks = blockMeanSquares(weighted, sampleRate, SHORT_TERM_SECONDS);
+  const absoluteGated = blocks.filter(ms => meanSquareToLufs(ms) > ABSOLUTE_GATE_LUFS);
+  if (absoluteGated.length === 0) return 0;
+  const relativeGate = meanSquareToLufs(average(absoluteGated)) - 20;
+  const loudness = absoluteGated.map(ms => meanSquareToLufs(ms)).filter(lufs => lufs > relativeGate).sort((a, b) => a - b);
+  return percentile(loudness, .95) - percentile(loudness, .1);
+}
+
+function truePeakDb(channels) {
+  const taps = interpolationTaps();
+  let samplePeak = 0;
+  for (const channel of channels) {
+    for (let i = 0; i < channel.length; i++) {
+      samplePeak = Math.max(samplePeak, Math.abs(at(channel, i)));
+    }
+  }
+  const threshold = samplePeak * CANDIDATE_RATIO;
+  let peak = samplePeak;
+  for (const channel of channels) {
+    for (let i = 0; i < channel.length; i++) {
+      if (Math.abs(at(channel, i)) < threshold && Math.abs(at(channel, i + 1)) < threshold) {
+        continue;
+      }
+      for (const phase of taps) {
+        let acc = 0;
+        for (let k = 0; k < phase.length; k++) {
+          acc += at(phase, k) * at(channel, i - k + TAP_CENTER);
+        }
+        peak = Math.max(peak, Math.abs(acc));
+      }
+    }
+  }
+  return amplitudeToDb(peak);
+}
+
+function amplitudeToDb(amplitude) {
+  return amplitude > 0 ? Math.max(SILENCE_DB, 20 * Math.log10(amplitude)) : SILENCE_DB;
+}
+
+const TAP_COUNT = 16;
+
+const CANDIDATE_RATIO = .5;
+
+const TAP_CENTER = TAP_COUNT / 2;
+
+const OVERSAMPLE = 4;
+
+function interpolationTaps() {
+  const phases = [];
+  for (let p = 1; p < OVERSAMPLE; p++) {
+    const fraction = p / OVERSAMPLE;
+    const phase = new Float64Array(TAP_COUNT);
+    for (let k = 0; k < TAP_COUNT; k++) {
+      const x = k - TAP_CENTER + fraction;
+      const sinc = Math.sin(Math.PI * x) / (Math.PI * x);
+      const hann = .5 + .5 * Math.cos(Math.PI * x / (TAP_CENTER + 1));
+      phase[k] = sinc * hann;
+    }
+    phases.push(phase);
+  }
+  return phases;
+}
+
+function blockMeanSquares(weighted, sampleRate, seconds) {
+  const length = weighted[0]?.length ?? 0;
+  const step = Math.round(STEP_SECONDS * sampleRate);
+  const segmentsPerBlock = Math.round(seconds / STEP_SECONDS);
+  const blockSize = segmentsPerBlock * step;
+  if (length < blockSize) {
+    return length > 0 ? [ channelMeanSquare(weighted, 0, length) ] : [];
+  }
+  const segments = [];
+  for (let start = 0; start + step <= length; start += step) {
+    segments.push(channelMeanSquare(weighted, start, start + step) * step);
+  }
+  const blocks = [];
+  let energy = 0;
+  for (let i = 0; i < segments.length; i++) {
+    energy += segments[i] ?? 0;
+    if (i >= segmentsPerBlock) energy -= segments[i - segmentsPerBlock] ?? 0;
+    if (i >= segmentsPerBlock - 1) blocks.push(energy / blockSize);
+  }
+  return blocks;
+}
+
+function gatedMean(blocks, relativeOffset) {
+  const absoluteGated = blocks.filter(ms => meanSquareToLufs(ms) > ABSOLUTE_GATE_LUFS);
+  if (absoluteGated.length === 0) return SILENCE_DB;
+  const relativeGate = meanSquareToLufs(average(absoluteGated)) + relativeOffset;
+  const gated = absoluteGated.filter(ms => meanSquareToLufs(ms) > relativeGate);
+  return meanSquareToLufs(average(gated));
+}
+
+function average(values) {
+  return values.reduce((sum, v) => sum + v, 0) / Math.max(1, values.length);
+}
+
+function percentile(sorted, p) {
+  if (sorted.length === 0) return 0;
+  const index = Math.min(sorted.length - 1, Math.round(p * (sorted.length - 1)));
+  return sorted[index] ?? 0;
+}
+
+function shelfFilter(sampleRate) {
+  const fc = 1681.974450955533;
+  const gainDb = 3.999843853973347;
+  const q = .7071752369554196;
+  const k = Math.tan(Math.PI * fc / sampleRate);
+  const vh = 10 ** (gainDb / 20);
+  const vb = vh ** .4996667741545416;
+  const a0 = 1 + k / q + k * k;
+  return {
+    b0: (vh + vb * k / q + k * k) / a0,
+    b1: 2 * (k * k - vh) / a0,
+    b2: (vh - vb * k / q + k * k) / a0,
+    a1: 2 * (k * k - 1) / a0,
+    a2: (1 - k / q + k * k) / a0
+  };
+}
+
+function highPassFilter(sampleRate) {
+  const fc = 38.13547087602444;
+  const q = .5003270373238773;
+  const k = Math.tan(Math.PI * fc / sampleRate);
+  const a0 = 1 + k / q + k * k;
+  return {
+    b0: 1,
+    b1: -2,
+    b2: 1,
+    a1: 2 * (k * k - 1) / a0,
+    a2: (1 - k / q + k * k) / a0
+  };
+}
+
+function applyBiquad(input, {b0: b0, b1: b1, b2: b2, a1: a1, a2: a2}) {
+  const output = new Float32Array(input.length);
+  let x1 = 0;
+  let x2 = 0;
+  let y1 = 0;
+  let y2 = 0;
+  for (let i = 0; i < input.length; i++) {
+    const x = at(input, i);
+    const y = b0 * x + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2;
+    output[i] = y;
+    x2 = x1;
+    x1 = x;
+    y2 = y1;
+    y1 = y;
+  }
+  return output;
+}
+
+const MEDIAN_RADIUS = 8;
+
+const PEAK_RADIUS = 2;
+
+const THRESHOLD_SCALE = 1.5;
+
+const FLOOR_SHARE = .1;
+
+const MIN_GAP_SECONDS = .08;
+
+function pickOnsets(flux, times) {
+  const floor = Math.max(...flux, 0) * FLOOR_SHARE;
+  const onsets = [];
+  if (!(floor > 0)) return onsets;
+  for (let f = 0; f < flux.length; f++) {
+    const value = at(flux, f);
+    const time = at(times, f);
+    if (value > floor && value > localMedian(flux, f) * THRESHOLD_SCALE && isLocalMax(flux, f) && time - (onsets.at(-1) ?? Number.NEGATIVE_INFINITY) >= MIN_GAP_SECONDS) {
+      onsets.push(time);
+    }
+  }
+  return onsets;
+}
+
+function localMedian(flux, f) {
+  const lo = Math.max(0, f - MEDIAN_RADIUS);
+  const hi = Math.min(flux.length, f + MEDIAN_RADIUS + 1);
+  const window = [ ...flux.subarray(lo, hi) ].sort((a, b) => a - b);
+  return window[Math.floor(window.length / 2)] ?? 0;
+}
+
+function isLocalMax(flux, f) {
+  const value = at(flux, f);
+  for (let d = -PEAK_RADIUS; d <= PEAK_RADIUS; d++) {
+    const neighbour = f + d;
+    if (d === 0 || neighbour < 0 || neighbour >= flux.length) continue;
+    if (d < 0 ? at(flux, neighbour) >= value : at(flux, neighbour) > value) {
+      return false;
+    }
+  }
+  return true;
+}
+
+const FRAME_SIZE = 4096;
+
+const HOP_SIZE = 1024;
+
+const SPECTROGRAM_BINS = 128;
+
+const SPECTROGRAM_MIN_HZ = 30;
+
+const SPECTROGRAM_MAX_HZ = 16e3;
+
+const BANDS = [ {
+  name: "sub",
+  lowHz: 20,
+  highHz: 60
+}, {
+  name: "bass",
+  lowHz: 60,
+  highHz: 250
+}, {
+  name: "lowMid",
+  lowHz: 250,
+  highHz: 500
+}, {
+  name: "mid",
+  lowHz: 500,
+  highHz: 2e3
+}, {
+  name: "presence",
+  lowHz: 2e3,
+  highHz: 6e3
+}, {
+  name: "air",
+  lowHz: 6e3,
+  highHz: 2e4
+} ];
+
+const KICK_RANGE = {
+  lowHz: 30,
+  highHz: 150
+};
+
+const HAT_RANGE = {
+  lowHz: 6e3,
+  highHz: 16e3
+};
+
+function computeSpectralFrames(mono, sampleRate) {
+  const window = hannWindow(FRAME_SIZE);
+  const frameCount = Math.max(1, Math.ceil(mono.length / HOP_SIZE));
+  const binHz = sampleRate / FRAME_SIZE;
+  const bandRanges = BANDS.map(band => binRange(band, binHz));
+  const kickBins = binRange(KICK_RANGE, binHz);
+  const hatBins = binRange(HAT_RANGE, binHz);
+  const logBinOf = logBinMap(binHz);
+  const frames = {
+    sampleRate: sampleRate,
+    frameCount: frameCount,
+    times: new Float64Array(frameCount),
+    bandPower: BANDS.map(() => new Float64Array(frameCount)),
+    centroid: new Float64Array(frameCount),
+    kickFlux: new Float64Array(frameCount),
+    hatFlux: new Float64Array(frameCount),
+    spectrogram: []
+  };
+  let previous = null;
+  for (let f = 0; f < frameCount; f++) {
+    const start = f * HOP_SIZE - FRAME_SIZE / 2;
+    const power = framePowerSpectrum(mono, start, window);
+    frames.times[f] = f * HOP_SIZE / sampleRate;
+    for (const [b, [lo, hi]] of bandRanges.entries()) {
+      frames.bandPower[b][f] = sumRange(power, lo, hi);
+    }
+    frames.centroid[f] = centroid(power, binHz);
+    frames.kickFlux[f] = previous ? positiveFlux(power, previous, kickBins) : 0;
+    frames.hatFlux[f] = previous ? positiveFlux(power, previous, hatBins) : 0;
+    frames.spectrogram.push(logSpectrum(power, logBinOf));
+    previous = power;
+  }
+  return frames;
+}
+
+function binRange(range, binHz) {
+  const maxBin = FRAME_SIZE / 2 + 1;
+  return [ Math.min(maxBin, Math.ceil(range.lowHz / binHz)), Math.min(maxBin, Math.ceil(range.highHz / binHz)) ];
+}
+
+function sumRange(power, lo, hi) {
+  let sum = 0;
+  for (let k = lo; k < hi; k++) sum += at(power, k);
+  return sum;
+}
+
+function centroid(power, binHz) {
+  let weighted = 0;
+  let total = 0;
+  for (let k = 1; k < power.length; k++) {
+    weighted += k * binHz * at(power, k);
+    total += at(power, k);
+  }
+  return total > 0 ? weighted / total : 0;
+}
+
+function positiveFlux(power, previous, [lo, hi]) {
+  let flux = 0;
+  for (let k = lo; k < hi; k++) {
+    const rise = Math.sqrt(at(power, k)) - Math.sqrt(at(previous, k));
+    if (rise > 0) flux += rise;
+  }
+  return flux;
+}
+
+function logBinMap(binHz) {
+  const map = new Int32Array(FRAME_SIZE / 2 + 1).fill(-1);
+  const logMin = Math.log(SPECTROGRAM_MIN_HZ);
+  const logSpan = Math.log(SPECTROGRAM_MAX_HZ) - logMin;
+  for (let k = 1; k < map.length; k++) {
+    const hz = k * binHz;
+    if (hz >= SPECTROGRAM_MIN_HZ && hz < SPECTROGRAM_MAX_HZ) {
+      map[k] = Math.floor((Math.log(hz) - logMin) / logSpan * SPECTROGRAM_BINS);
+    }
+  }
+  return map;
+}
+
+function logSpectrum(power, logBinOf) {
+  const rows = new Float32Array(SPECTROGRAM_BINS);
+  const counts = new Uint16Array(SPECTROGRAM_BINS);
+  for (let k = 0; k < logBinOf.length; k++) {
+    const row = logBinOf[k] ?? -1;
+    if (row >= 0) {
+      rows[row] = (rows[row] ?? 0) + at(power, k);
+      counts[row] = (counts[row] ?? 0) + 1;
+    }
+  }
+  for (let row = 0; row < SPECTROGRAM_BINS; row++) {
+    const count = counts[row] ?? 0;
+    if (count > 0) {
+      rows[row] = (rows[row] ?? 0) / count;
+    } else if (row > 0) {
+      rows[row] = rows[row - 1] ?? 0;
+    }
+  }
+  return rows;
+}
+
+const MIN_BPM = 85;
+
+const MAX_BPM = 175;
+
+const REFINE_SPANS = [ 2, 4, 8, 16 ];
+
+const REFINE_WINDOW = 2;
+
+function estimateTempo(strength, frameRate) {
+  const envelope = centered(strength);
+  const minLag = Math.floor(60 * frameRate / MAX_BPM);
+  const maxLag = Math.ceil(60 * frameRate / MIN_BPM);
+  if (envelope.length < maxLag * 4) return null;
+  let bestLag = 0;
+  let bestScore = 0;
+  for (let lag = minLag; lag <= maxLag; lag++) {
+    const score = autocorrelation(envelope, lag);
+    if (score > bestScore) {
+      bestScore = score;
+      bestLag = lag;
+    }
+  }
+  if (bestLag === 0) return null;
+  const beatLag = REFINE_SPANS.reduce((lag, beats) => refineLag(envelope, lag, beats), bestLag);
+  const bpm = 60 * frameRate / beatLag;
+  const beatFrames = 60 * frameRate / bpm;
+  return {
+    bpm: Math.round(bpm * 10) / 10,
+    firstBeatSeconds: beatPhase(strength, beatFrames) / frameRate
+  };
+}
+
+function centered(strength) {
+  const mean = strength.reduce((sum, v) => sum + v, 0) / strength.length;
+  return strength.map(v => Math.max(0, v - mean));
+}
+
+function autocorrelation(envelope, lag) {
+  let sum = 0;
+  for (let i = lag; i < envelope.length; i++) {
+    sum += at(envelope, i) * at(envelope, i - lag);
+  }
+  return sum / (envelope.length - lag);
+}
+
+function refineLag(envelope, beatLag, beats) {
+  const target = Math.round(beatLag * beats);
+  if (target + REFINE_WINDOW + 1 >= envelope.length / 2) return beatLag;
+  let best = target;
+  let bestScore = Number.NEGATIVE_INFINITY;
+  for (let lag = target - REFINE_WINDOW; lag <= target + REFINE_WINDOW; lag++) {
+    const score = autocorrelation(envelope, lag);
+    if (score > bestScore) {
+      bestScore = score;
+      best = lag;
+    }
+  }
+  const left = autocorrelation(envelope, best - 1);
+  const right = autocorrelation(envelope, best + 1);
+  const curvature = left - 2 * bestScore + right;
+  const offset = curvature < 0 ? .5 * (left - right) / curvature : 0;
+  return (best + offset) / beats;
+}
+
+function beatPhase(strength, beatFrames) {
+  let bestPhase = 0;
+  let bestScore = Number.NEGATIVE_INFINITY;
+  for (let phase = 0; phase < beatFrames; phase++) {
+    let score = 0;
+    for (let t = phase; t < strength.length; t += beatFrames) {
+      score += at(strength, Math.round(t));
+    }
+    if (score > bestScore) {
+      bestScore = score;
+      bestPhase = phase;
+    }
+  }
+  return bestPhase;
+}
+
+function analyzeBars(inputs, grid) {
+  const rows = [];
+  for (let bar = 0; bar < grid.barCount; bar++) {
+    const startSec = bar * grid.barSeconds;
+    const endSec = startSec + grid.barSeconds;
+    rows.push(analyzeBar(inputs, bar * (grid.barsPerRow ?? 1) + 1, startSec, endSec));
+  }
+  return rows;
+}
+
+function analyzeBar(inputs, bar, startSec, endSec) {
+  const {raw: raw, weighted: weighted, sampleRate: sampleRate, spectral: spectral, pitch: pitch} = inputs;
+  const start = Math.floor(startSec * sampleRate);
+  const end = Math.min(raw[0]?.length ?? 0, Math.floor(endSec * sampleRate));
+  const frames = frameIndexes(spectral.times, startSec, endSec);
+  const pitchFrames = frameIndexes(pitch.times, startSec, endSec);
+  const chroma = sumVectors(pitch.chroma, pitchFrames);
+  const bassChroma = sumVectors(pitch.bassChroma, pitchFrames);
+  return {
+    bar: bar,
+    lufs: meanSquareToLufs(channelMeanSquare(weighted, start, end)),
+    peakDb: amplitudeToDb(peakOf(raw, start, end)),
+    bandsDb: BANDS.map((_, b) => powerToDb(meanOf(spectral.bandPower[b], frames))),
+    centroidHz: meanOf(spectral.centroid, frames),
+    kickHits: countWithin(inputs.kickOnsets, startSec, endSec),
+    hatHits: countWithin(inputs.hatOnsets, startSec, endSec),
+    correlation: stereoCorrelation(raw, start, end),
+    pitches: topPitchClasses(chroma, 3),
+    bassNote: topPitchClasses(bassChroma, 1, 1)[0] ?? null
+  };
+}
+
+function powerToDb(power) {
+  return power > 0 ? Math.max(SILENCE_DB, 10 * Math.log10(power)) : SILENCE_DB;
+}
+
+function stereoCorrelation(raw, start, end) {
+  const [left, right] = raw;
+  if (left == null || right == null) return 1;
+  let lr = 0;
+  let ll = 0;
+  let rr = 0;
+  for (let i = start; i < end; i++) {
+    const l = at(left, i);
+    const r = at(right, i);
+    lr += l * r;
+    ll += l * l;
+    rr += r * r;
+  }
+  return ll > 0 && rr > 0 ? lr / Math.sqrt(ll * rr) : 1;
+}
+
+function frameIndexes(times, startSec, endSec) {
+  const indexes = [];
+  for (let f = 0; f < times.length; f++) {
+    const t = at(times, f);
+    if (t >= startSec && t < endSec) indexes.push(f);
+  }
+  return indexes;
+}
+
+function meanOf(values, indexes) {
+  if (values == null || indexes.length === 0) return 0;
+  return indexes.reduce((sum, f) => sum + at(values, f), 0) / indexes.length;
+}
+
+function sumVectors(vectors, indexes) {
+  const sum = new Float64Array(12);
+  for (const f of indexes) {
+    const vector = vectors[f];
+    if (vector == null) continue;
+    for (let i = 0; i < 12; i++) sum[i] = at(sum, i) + at(vector, i);
+  }
+  return sum;
+}
+
+function peakOf(channels, start, end) {
+  let peak = 0;
+  for (const channel of channels) {
+    for (let i = start; i < end; i++) peak = Math.max(peak, Math.abs(at(channel, i)));
+  }
+  return peak;
+}
+
+function countWithin(times, startSec, endSec) {
+  return times.filter(t => t >= startSec && t < endSec).length;
+}
+
+const PNG_SIGNATURE = Uint8Array.of(137, 80, 78, 71, 13, 10, 26, 10);
+
+const COLOR_TYPE_RGB = 2;
+
+function encodePng(width, height, rgb) {
+  if (rgb.length !== width * height * 3) {
+    throw new Error(`expected ${width * height * 3} RGB bytes, got ${rgb.length}`);
+  }
+  const stride = width * 3;
+  const raw = Buffer.alloc((stride + 1) * height);
+  for (let y = 0; y < height; y++) {
+    raw.set(rgb.subarray(y * stride, (y + 1) * stride), y * (stride + 1) + 1);
+  }
+  const header = Buffer.alloc(13);
+  header.writeUInt32BE(width, 0);
+  header.writeUInt32BE(height, 4);
+  header[8] = 8;
+  header[9] = COLOR_TYPE_RGB;
+  return Buffer.concat([ PNG_SIGNATURE, chunk("IHDR", header), chunk("IDAT", deflateSync(raw)), chunk("IEND", Buffer.alloc(0)) ]);
+}
+
+function chunk(type, data) {
+  const typeBytes = Buffer.from(type, "ascii");
+  const out = Buffer.alloc(12 + data.length);
+  out.writeUInt32BE(data.length, 0);
+  typeBytes.copy(out, 4);
+  out.set(data, 8);
+  out.writeUInt32BE(crc32(Buffer.concat([ typeBytes, data ])), 8 + data.length);
+  return out;
+}
+
+let crcTable = null;
+
+function crc32(bytes) {
+  crcTable ??= buildCrcTable();
+  let crc = 4294967295;
+  for (const byte of bytes) {
+    crc = (crcTable[(crc ^ byte) & 255] ?? 0) ^ crc >>> 8;
+  }
+  return (crc ^ 4294967295) >>> 0;
+}
+
+function buildCrcTable() {
+  const table = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = c & 1 ? 3988292384 ^ c >>> 1 : c >>> 1;
+    table[n] = c >>> 0;
+  }
+  return table;
+}
+
+const MAX_WIDTH = 1024;
+
+const ROW_HEIGHT = 2;
+
+const DYNAMIC_RANGE_DB = 80;
+
+const GUIDE_FREQUENCIES_HZ = [ 100, 1e3, 1e4 ];
+
+const COLOR_STOPS = [ [ 0, 0, 4 ], [ 60, 15, 110 ], [ 150, 40, 105 ], [ 225, 90, 45 ], [ 250, 190, 40 ], [ 252, 255, 165 ] ];
+
+const SPECTROGRAM_LEGEND = `Spectrogram: x = time (thin line every bar, bright line every 4 bars), y = frequency on a log scale ${SPECTROGRAM_MIN_HZ} Hz (bottom) to ${SPECTROGRAM_MAX_HZ / 1e3} kHz (top), faint horizontal guides at 100 Hz, 1 kHz and 10 kHz. Brighter = louder, ${DYNAMIC_RANGE_DB} dB range.`;
+
+function renderSpectrogram(spectrogram, frameSeconds, barSeconds) {
+  const width = Math.max(1, Math.min(MAX_WIDTH, spectrogram.length));
+  const height = SPECTROGRAM_BINS * ROW_HEIGHT;
+  const columns = downsampleColumns(spectrogram, width);
+  const topDb = Math.max(...columns.map(column => Math.max(...column)));
+  const rgb = new Uint8Array(width * height * 3);
+  const secondsPerColumn = spectrogram.length * frameSeconds / width;
+  const guideRows = new Set(GUIDE_FREQUENCIES_HZ.map(hz => rowForHz(hz)));
+  for (let x = 0; x < width; x++) {
+    const barLine = barLineStrength(x, secondsPerColumn, barSeconds);
+    const column = columns[x];
+    for (let row = 0; row < SPECTROGRAM_BINS; row++) {
+      const level = ((column[row] ?? 0) - (topDb - DYNAMIC_RANGE_DB)) / DYNAMIC_RANGE_DB;
+      let color = colorFor(level);
+      if (barLine > 0) color = blend(color, [ 255, 255, 255 ], barLine); else if (guideRows.has(row)) color = blend(color, [ 255, 255, 255 ], .12);
+      for (let dy = 0; dy < ROW_HEIGHT; dy++) {
+        const y = height - 1 - (row * ROW_HEIGHT + dy);
+        rgb.set(color, (y * width + x) * 3);
+      }
+    }
+  }
+  return encodePng(width, height, rgb);
+}
+
+function downsampleColumns(spectrogram, width) {
+  const columns = [];
+  const perColumn = spectrogram.length / width;
+  for (let x = 0; x < width; x++) {
+    const from = Math.floor(x * perColumn);
+    const to = Math.max(from + 1, Math.floor((x + 1) * perColumn));
+    const column = new Float32Array(SPECTROGRAM_BINS).fill(-Infinity);
+    for (let f = from; f < to; f++) {
+      const frame = spectrogram[f];
+      for (let row = 0; row < SPECTROGRAM_BINS; row++) {
+        const db = 10 * Math.log10((frame[row] ?? 0) + 1e-12);
+        column[row] = Math.max(column[row] ?? -Infinity, db);
+      }
+    }
+    columns.push(column);
+  }
+  return columns;
+}
+
+function barLineStrength(x, secondsPerColumn, barSeconds) {
+  const startBar = Math.floor(x * secondsPerColumn / barSeconds);
+  const endBar = Math.floor((x + 1) * secondsPerColumn / barSeconds);
+  if (x === 0 || endBar === startBar) return 0;
+  return endBar % 4 === 0 ? .7 : .3;
+}
+
+function rowForHz(hz) {
+  const logMin = Math.log(SPECTROGRAM_MIN_HZ);
+  const span = Math.log(SPECTROGRAM_MAX_HZ) - logMin;
+  return Math.floor((Math.log(hz) - logMin) / span * SPECTROGRAM_BINS);
+}
+
+function colorFor(level) {
+  const clamped = Math.min(1, Math.max(0, level));
+  const position = clamped * (COLOR_STOPS.length - 1);
+  const index = Math.min(COLOR_STOPS.length - 2, Math.floor(position));
+  return blend(COLOR_STOPS[index], COLOR_STOPS[index + 1], position - index);
+}
+
+function blend(a, b, amount) {
+  return [ Math.round(a[0] + (b[0] - a[0]) * amount), Math.round(a[1] + (b[1] - a[1]) * amount), Math.round(a[2] + (b[2] - a[2]) * amount) ];
+}
+
+const ONSET_LATENCY_SECONDS = .03;
+
+const JUMP_THRESHOLD_LU = 3;
+
+const MAX_SINGLE_BAR_ROWS = 64;
+
+const PHRASE_BARS = 4;
+
+const TEMPO_EXCERPT_SECONDS = 60;
+
+const BAR_HEADER = "bar lufs peak " + BANDS.map(band => band.name).join(" ") + " brightHz kick hat corr pitches bassNote";
+
+function analyzeAudio(audio, options) {
+  const {sampleRate: sampleRate} = audio;
+  if ((audio.channels[0]?.length ?? 0) === 0) {
+    throw new Error("audio is empty");
+  }
+  const grid = buildGrid(audio, options);
+  const raw = sliceToGrid(audio, grid, options.bars);
+  const length = raw[0]?.length ?? 0;
+  const totalBars = Math.max(1, Math.round(length / sampleRate / grid.barSeconds));
+  const rowBars = totalBars > MAX_SINGLE_BAR_ROWS ? PHRASE_BARS : 1;
+  const mono = toMono(raw);
+  const weighted = raw.map(channel => kWeight(channel, sampleRate));
+  const spectral = computeSpectralFrames(mono, sampleRate);
+  const pitch = computePitchFrames(mono, sampleRate);
+  const shift = t => t + ONSET_LATENCY_SECONDS;
+  const kickOnsets = pickOnsets(spectral.kickFlux, spectral.times).map(shift);
+  const hatOnsets = pickOnsets(spectral.hatFlux, spectral.times).map(shift);
+  const rows = analyzeBars({
+    raw: raw,
+    weighted: weighted,
+    sampleRate: sampleRate,
+    spectral: spectral,
+    pitch: pitch,
+    kickOnsets: kickOnsets,
+    hatOnsets: hatOnsets
+  }, {
+    barSeconds: grid.barSeconds * rowBars,
+    barCount: Math.ceil(totalBars / rowBars),
+    barsPerRow: rowBars
+  });
+  const key = estimateKey(sumChroma(pitch.chroma));
+  const summary = {
+    seconds: round(length / sampleRate, 2),
+    bars: totalBars,
+    tempo: grid.tempo,
+    ...grid.tempoSource === "detected" ? {
+      tempoDetected: true,
+      gridStartSeconds: round(grid.startSeconds, 3)
+    } : {},
+    ...rowBars > 1 ? {
+      rowsPerPhrase: `${rowBars} bars per row`
+    } : {},
+    integratedLufs: round(integratedLoudness(weighted, sampleRate)),
+    loudnessRangeLu: round(loudnessRange(weighted, sampleRate)),
+    truePeakDb: round(truePeakDb(raw)),
+    bandsDb: Object.fromEntries(BANDS.map((band, b) => [ band.name, round(powerToDb(mean(spectral.bandPower[b]))) ])),
+    brightnessHz: Math.round(mean(spectral.centroid)),
+    correlation: round(stereoCorrelation(raw, 0, length), 2),
+    kickHits: kickOnsets.length,
+    hatHits: hatOnsets.length,
+    key: key ? `${key.key} (confidence ${round(key.confidence, 2)})` : null
+  };
+  return {
+    report: {
+      summary: summary,
+      bars: [ BAR_HEADER, ...rows.map(formatRow) ],
+      jumps: findJumps(rows)
+    },
+    spectrogramPng: options.spectrogram === false ? null : renderSpectrogram(spectral.spectrogram, HOP_SIZE / sampleRate, grid.barSeconds)
+  };
+}
+
+function buildGrid(audio, options) {
+  const toGrid = (tempo, startSeconds) => ({
+    tempo: tempo,
+    tempoSource: options.detectTempo === true ? "detected" : "set",
+    startSeconds: startSeconds,
+    barSeconds: options.beatsPerBar * 60 / tempo
+  });
+  if (options.detectTempo !== true) return toGrid(options.tempo, 0);
+  const {sampleRate: sampleRate} = audio;
+  const length = audio.channels[0]?.length ?? 0;
+  const excerptStart = Math.floor(Math.max(0, Math.min(length / 3, length - TEMPO_EXCERPT_SECONDS * sampleRate)));
+  const excerpt = toMono(audio.channels.map(channel => channel.subarray(excerptStart, excerptStart + TEMPO_EXCERPT_SECONDS * sampleRate)));
+  const frames = computeSpectralFrames(excerpt, sampleRate);
+  const strength = frames.kickFlux.map((v, i) => v + at(frames.hatFlux, i));
+  const estimate = estimateTempo(strength, sampleRate / HOP_SIZE);
+  if (estimate == null) {
+    return {
+      ...toGrid(options.tempo, 0),
+      tempoSource: "set"
+    };
+  }
+  const beatSeconds = 60 / estimate.bpm;
+  const firstBeat = ((excerptStart / sampleRate + estimate.firstBeatSeconds) % beatSeconds + beatSeconds) % beatSeconds;
+  return toGrid(estimate.bpm, firstBeat);
+}
+
+function sliceToGrid(audio, grid, bars) {
+  const {sampleRate: sampleRate} = audio;
+  const start = Math.round(grid.startSeconds * sampleRate);
+  const end = bars == null ? void 0 : start + Math.round(bars * grid.barSeconds * sampleRate);
+  return audio.channels.map(channel => channel.subarray(start, end));
+}
+
+function sumChroma(frames) {
+  const total = new Float64Array(12);
+  for (const frame of frames) {
+    for (let i = 0; i < 12; i++) total[i] = at(total, i) + at(frame, i);
+  }
+  return total;
+}
+
+function findJumps(rows) {
+  const jumps = [];
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    const delta = row.lufs - rows[i - 1].lufs;
+    if (Math.abs(delta) >= JUMP_THRESHOLD_LU) {
+      jumps.push(`bar ${row.bar}: ${delta > 0 ? "+" : ""}${round(delta)} LU`);
+    }
+  }
+  return jumps;
+}
+
+function formatRow(row) {
+  return [ row.bar, round(row.lufs), round(row.peakDb), ...row.bandsDb.map(db => round(db)), Math.round(row.centroidHz), row.kickHits, row.hatHits, round(row.correlation, 2), row.pitches.join(",") || "-", row.bassNote ?? "-" ].join(" ");
+}
+
+function toMono(channels) {
+  const length = channels[0]?.length ?? 0;
+  const mono = new Float32Array(length);
+  for (const channel of channels) {
+    for (let i = 0; i < length; i++) mono[i] = at(mono, i) + at(channel, i) / channels.length;
+  }
+  return mono;
+}
+
+function mean(values) {
+  if (values == null || values.length === 0) return 0;
+  return values.reduce((sum, v) => sum + v, 0) / values.length;
+}
+
+function round(value, digits = 1) {
+  const factor = 10 ** digits;
+  return Math.round(value * factor) / factor;
 }
 
 function parseTimeSignature(timeSignature) {
@@ -31927,6 +33189,404 @@ function parseTimeSignature(timeSignature) {
     numerator: Number.parseInt(match[1]),
     denominator: Number.parseInt(match[2])
   };
+}
+
+const PLAYBACK = "adj-playback";
+
+const UPDATE_TRACK = "adj-update-track";
+
+async function call(next, tool, args) {
+  const response = await next(tool, args);
+  if (response.isError) {
+    throw new Error(`${tool} failed: ${response.content.map(c => c.text).join(" ")}`);
+  }
+  const payload = response.content.filter(item => !item.text.startsWith("WARNING:"));
+  return parseToolPayload({
+    content: payload
+  });
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+const MAX_START_ATTEMPTS = 3;
+
+const DEFAULT_TIMING = {
+  pollMs: 250,
+  graceMs: 1e4,
+  settleMs: 150
+};
+
+async function recordTake(next, plan, slot, timing) {
+  const {timeSigNumerator: num, timeSigDenominator: den} = plan;
+  const target = plan.startTime == null ? null : barBeatToAbletonBeats(plan.startTime, num, den);
+  const warnings = [];
+  let startBeats = null;
+  for (let attempt = 1; attempt <= MAX_START_ATTEMPTS; attempt++) {
+    await startRecording(next, plan, slot, timing, attempt > 1);
+    startBeats = await waitForStart(next, plan, slot, timing);
+    if (target == null || startBeats == null || startBeats === target) break;
+    if (attempt === MAX_START_ATTEMPTS) {
+      warnings.push(`recording began at ${abletonBeatsToBarBeat(startBeats, num, den)} instead of ${plan.startTime}`);
+    } else {
+      await discardTake(next, slot);
+    }
+  }
+  await waitForLength(next, plan, slot, timing);
+  await call(next, PLAYBACK, {
+    action: "stop-session-clips",
+    slots: slot
+  });
+  return {
+    songStart: startBeats == null ? null : abletonBeatsToBarBeat(startBeats, num, den),
+    warnings: warnings
+  };
+}
+
+function ownsTransport(plan) {
+  return plan.startTime != null || !plan.wasPlaying;
+}
+
+async function startRecording(next, plan, slot, timing, retry) {
+  if (plan.startTime != null) {
+    if (plan.wasPlaying && !retry) {
+      await call(next, PLAYBACK, {
+        action: "stop"
+      });
+    }
+    await call(next, PLAYBACK, {
+      action: "update-arrangement",
+      startTime: plan.startTime
+    });
+    await sleep(timing.settleMs);
+  }
+  await call(next, PLAYBACK, {
+    action: "play-session-clips",
+    slots: slot
+  });
+}
+
+async function waitForStart(next, plan, slot, timing) {
+  const deadline = Date.now() + plan.barSeconds * 2e3 + timing.graceMs;
+  while (Date.now() < deadline) {
+    const clip = await readClip(next, slot);
+    if (clip.recording && clip.playingPosition != null) {
+      return await readSongStart(next, plan, clip.playingPosition);
+    }
+    await sleep(timing.pollMs);
+  }
+  throw new Error("recording didn't start (is the transport able to start? is the track armed?)");
+}
+
+async function waitForLength(next, plan, slot, timing) {
+  const {timeSigNumerator: num, timeSigDenominator: den} = plan;
+  const targetBeats = barBeatToAbletonBeats(`${plan.bars + 1}|1`, num, den);
+  const deadline = Date.now() + plan.bars * plan.barSeconds * 1e3 + timing.graceMs;
+  while (Date.now() < deadline) {
+    const clip = await readClip(next, slot);
+    const recorded = clip.playingPosition == null ? 0 : barBeatToAbletonBeats(clip.playingPosition, num, den);
+    if (recorded >= targetBeats) return;
+    await sleep(timing.pollMs);
+  }
+  throw new Error("recording didn't reach the requested length in time");
+}
+
+async function readSongStart(next, plan, playingPosition) {
+  const {timeSigNumerator: num, timeSigDenominator: den} = plan;
+  const state = await call(next, PLAYBACK, {
+    action: "update-arrangement"
+  });
+  if (state.currentTime == null) return null;
+  const songBeats = barBeatToAbletonBeats(state.currentTime, num, den) - barBeatToAbletonBeats(playingPosition, num, den);
+  return Math.max(0, Math.round(songBeats * 4) / 4);
+}
+
+async function discardTake(next, slot) {
+  await call(next, PLAYBACK, {
+    action: "stop"
+  });
+  const clip = await readClip(next, slot);
+  if (clip.id != null) {
+    await call(next, "adj-delete", {
+      type: "clip",
+      ids: String(clip.id)
+    });
+  }
+}
+
+function readClip(next, slot) {
+  return call(next, "adj-read-clip", {
+    slot: slot,
+    include: []
+  });
+}
+
+const CAPTURE_TRACK_NAME = "ADJ Listen";
+
+const RESAMPLING_INPUT = "Resampling";
+
+const TRACK_TAP_CHANNELS = [ "Post Mixer", "Post FX" ];
+
+const MUTED_STATES = new Set([ "muted", "muted-also-via-solo", "muted-and-soloed" ]);
+
+async function captureAudio(next, plan, timing = DEFAULT_TIMING) {
+  const created = await call(next, "adj-create-track", {
+    type: "audio",
+    name: CAPTURE_TRACK_NAME,
+    count: 1
+  });
+  const track = {
+    id: String(created.id),
+    trackIndex: created.trackIndex
+  };
+  const state = {
+    restoreMutes: []
+  };
+  let recorded = null;
+  let failure = null;
+  try {
+    recorded = await record(next, plan, timing, track, state);
+  } catch (error) {
+    failure = error;
+  }
+  const warnings = await cleanUp(next, track.id, state, plan);
+  if (recorded == null) {
+    const message = errorMessage(failure);
+    throw new Error(warnings.length > 0 ? `${message} (${warnings.join("; ")})` : message);
+  }
+  return {
+    ...recorded,
+    warnings: [ ...recorded.warnings, ...warnings ]
+  };
+}
+
+async function record(next, plan, timing, track, state) {
+  const slot = `${track.trackIndex}/0`;
+  await routeInput(next, track, plan.sourceTrackName);
+  await call(next, UPDATE_TRACK, {
+    ids: track.id,
+    arm: true
+  });
+  for (const index of plan.muteTrackIndexes) {
+    const id = await muteTrack(next, index);
+    if (id != null) state.restoreMutes.push(id);
+  }
+  const take = await recordTake(next, plan, slot, timing);
+  const clip = await call(next, "adj-read-clip", {
+    slot: slot,
+    include: [ "sample" ]
+  });
+  if (clip.sampleFile == null) {
+    throw new Error("the recording has no audio file");
+  }
+  return {
+    sampleFile: clip.sampleFile,
+    ...take
+  };
+}
+
+async function routeInput(next, track, sourceTrackName) {
+  const typeName = sourceTrackName ?? RESAMPLING_INPUT;
+  const types = await availableInputs(next, track.trackIndex, "availableInputRoutingTypes");
+  const type = types.find(option => option.name === typeName);
+  if (type?.inputId == null) {
+    throw new Error(`can't route "${typeName}" into the recording track (available: ${types.map(t => t.name).join(", ")})`);
+  }
+  await call(next, UPDATE_TRACK, {
+    ids: track.id,
+    inputRoutingTypeId: type.inputId,
+    monitoringState: "off"
+  });
+  if (sourceTrackName == null) return;
+  const channels = await availableInputs(next, track.trackIndex, "availableInputRoutingChannels");
+  const channel = TRACK_TAP_CHANNELS.map(name => channels.find(option => option.name === name)).find(option => option?.inputId != null) ?? channels[0];
+  if (channel?.inputId != null) {
+    await call(next, UPDATE_TRACK, {
+      ids: track.id,
+      inputRoutingChannelId: channel.inputId
+    });
+  }
+}
+
+async function availableInputs(next, trackIndex, key) {
+  const track = await call(next, "adj-read-track", {
+    trackIndex: trackIndex,
+    include: [ "available-routings" ]
+  });
+  return track[key] ?? [];
+}
+
+async function muteTrack(next, trackIndex) {
+  const track = await call(next, "adj-read-track", {
+    trackIndex: trackIndex,
+    include: []
+  });
+  if (track.id == null) {
+    throw new Error(`no track at index ${trackIndex} to mute`);
+  }
+  if (MUTED_STATES.has(track.state ?? "")) return null;
+  const id = String(track.id);
+  await call(next, UPDATE_TRACK, {
+    ids: id,
+    mute: true
+  });
+  return id;
+}
+
+async function cleanUp(next, trackId, state, plan) {
+  const steps = [];
+  if (ownsTransport(plan)) {
+    steps.push([ PLAYBACK, {
+      action: "stop"
+    } ]);
+  }
+  if (state.restoreMutes.length > 0) {
+    steps.push([ UPDATE_TRACK, {
+      ids: state.restoreMutes.join(","),
+      mute: false
+    } ]);
+  }
+  steps.push(plan.keep ? [ UPDATE_TRACK, {
+    ids: trackId,
+    arm: false
+  } ] : [ "adj-delete", {
+    type: "track",
+    ids: trackId
+  } ]);
+  const problems = [];
+  for (const [tool, args] of steps) {
+    try {
+      await call(next, tool, args);
+    } catch (error) {
+      problems.push(`cleanup: ${errorMessage(error)}`);
+    }
+  }
+  return problems;
+}
+
+const DEFAULT_BARS = 8;
+
+const READ_RETRIES = 8;
+
+const READ_RETRY_MS = 250;
+
+const BAR_COLUMNS_NOTE = "bars columns: lufs = bar loudness, peak = sample peak dBFS, sub..air = band power dB, brightHz = spectral centroid, kick/hat = onsets in the 30-150 Hz / 6-16 kHz ranges (kick-like and hat-like hits), corr = L/R correlation (1 mono, <0 phase trouble), pitches = strongest pitch classes, bassNote = strongest bass pitch class.";
+
+async function handleListen(next, args, timing = DEFAULT_TIMING) {
+  try {
+    const liveSet = parseToolPayload(await next("adj-read-live-set", {
+      include: [ "tracks", "locators" ]
+    }));
+    const {numerator: numerator, denominator: denominator} = parseTimeSignature(liveSet.timeSignature ?? "4/4");
+    const beatsPerBar = timeSigToAbletonBeatsPerBar(numerator, denominator);
+    const tempo = args.tempo ?? liveSet.tempo ?? 120;
+    const barSeconds = beatsPerBar * 60 / tempo;
+    let audio;
+    let source;
+    if (args.file == null) {
+      const bars = args.bars ?? DEFAULT_BARS;
+      const capture = await captureAudio(next, {
+        bars: bars,
+        barSeconds: barSeconds,
+        timeSigNumerator: numerator,
+        timeSigDenominator: denominator,
+        sourceTrackName: sourceTrackName(liveSet, args.trackIndex),
+        startTime: args.startTime ?? locatorTime(liveSet, args.startLocator),
+        muteTrackIndexes: parseIndexes(args.mute),
+        wasPlaying: liveSet.isPlaying === true,
+        keep: args.keep === true
+      }, timing);
+      audio = await readWithRetry(capture.sampleFile, timing.pollMs);
+      source = {
+        recorded: args.trackIndex == null ? "master" : `track ${args.trackIndex}`,
+        songStart: capture.songStart,
+        file: capture.sampleFile,
+        ...args.mute ? {
+          muted: args.mute
+        } : {},
+        ...capture.warnings.length > 0 ? {
+          warnings: capture.warnings
+        } : {}
+      };
+    } else {
+      audio = await readAudioFile(args.file);
+      source = {
+        file: args.file
+      };
+    }
+    const {report: report, spectrogramPng: spectrogramPng} = analyzeAudio(audio, {
+      tempo: tempo,
+      beatsPerBar: beatsPerBar,
+      bars: args.file == null ? args.bars ?? DEFAULT_BARS : args.bars,
+      detectTempo: args.file != null && args.tempo == null,
+      spectrogram: args.spectrogram
+    });
+    const text = JSON.stringify({
+      source: source,
+      ...report,
+      notes: [ BAR_COLUMNS_NOTE ]
+    });
+    const content = [ {
+      type: "text",
+      text: text
+    } ];
+    if (spectrogramPng) {
+      content.push({
+        type: "image",
+        data: spectrogramPng.toString("base64"),
+        mimeType: "image/png"
+      }, {
+        type: "text",
+        text: SPECTROGRAM_LEGEND
+      });
+    }
+    return {
+      content: content
+    };
+  } catch (error) {
+    return formatErrorResponse(`listen failed: ${errorMessage(error)}`);
+  }
+}
+
+function sourceTrackName(liveSet, trackIndex) {
+  if (trackIndex == null) return null;
+  const track = liveSet.tracks?.find(t => t.trackIndex === trackIndex);
+  if (track?.name == null) throw new Error(`no track at index ${trackIndex}`);
+  return track.name;
+}
+
+function locatorTime(liveSet, locator) {
+  if (locator == null) return void 0;
+  const found = liveSet.locators?.find(l => l.id === locator || l.name === locator);
+  if (found?.time == null) throw new Error(`no locator "${locator}"`);
+  return found.time;
+}
+
+function parseIndexes(list) {
+  if (list == null || list.trim() === "") return [];
+  return list.split(",").map(part => {
+    const index = Number(part.trim());
+    if (!Number.isInteger(index) || index < 0) {
+      throw new Error(`invalid track index "${part.trim()}" in mute`);
+    }
+    return index;
+  });
+}
+
+async function readWithRetry(filePath, retryMs) {
+  let lastError;
+  for (let attempt = 0; attempt < READ_RETRIES; attempt++) {
+    try {
+      const audio = await readAudioFile(filePath);
+      if ((audio.channels[0]?.length ?? 0) > 0) return audio;
+      lastError = new Error("recording is empty");
+    } catch (error) {
+      lastError = error;
+    }
+    await new Promise(resolve => setTimeout(resolve, Math.min(retryMs, READ_RETRY_MS)));
+  }
+  throw lastError instanceof Error ? lastError : new Error(String(lastError));
 }
 
 const NEW_TRACK_POLL_MS = 250;
@@ -32011,6 +33671,9 @@ function makeBridgeDispatcher(next, bridge) {
   const dispatch = async (tool, args) => {
     if (tool === "adj-browse") {
       return await handleBrowse(bridge, args);
+    }
+    if (tool === "adj-listen") {
+      return await handleListen(next, args);
     }
     if (tool === "adj-automate") {
       return await handleAutomate(bridge, next, args);
@@ -52815,6 +54478,28 @@ const toolDefUpdateClip = defineTool("adj-update-clip", {
   }
 });
 
+const MAX_LISTEN_BARS = 64;
+
+const toolDefListen = defineTool("adj-listen", {
+  title: "Listen",
+  description: "Record N bars of the live mix (or one track) in real time and analyze it, or analyze an audio file. Returns per-bar loudness, band balance, brightness, kick/hat-range hits, stereo correlation, pitches, a key estimate and a spectrogram image. Recording takes as long as the bars play. Use it to check a change by ear-proxy: capture, change, capture again, compare.",
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: false
+  },
+  inputSchema: {
+    bars: number().int().min(1).max(MAX_LISTEN_BARS).optional().describe("bars to record (default 8); with file, bars from its start (default all)"),
+    trackIndex: number().int().min(0).optional().describe("record this track's output instead of the master"),
+    startTime: string$1().optional().describe("bar|beat to play the arrangement from; omit to record what is playing now"),
+    startLocator: string$1().optional().describe("locator ID or name to play the arrangement from"),
+    mute: string$1().optional().describe("comma-separated track indexes to mute while recording (restored after); capture with and without to isolate a track"),
+    file: string$1().optional().describe("absolute path of an audio file to analyze instead of recording (WAV/AIFF; other formats need ffmpeg)"),
+    tempo: number().min(20).max(999).optional().describe("bar grid tempo for file analysis (default: the Live Set tempo)"),
+    spectrogram: boolean().default(true).describe("include a spectrogram image"),
+    keep: boolean().default(false).describe("keep the recording track and clip in the set (default: deleted after analysis)")
+  }
+});
+
 const toolDefPlayback = defineTool("adj-playback", {
   title: "Playback",
   description: "Control playback of the arrangement and session scenes/clips.",
@@ -53371,7 +55056,7 @@ const toolDefGuide = defineTool("adj-guide", {
   }
 });
 
-const STANDARD_TOOL_DEFS = [ toolDefConnect, toolDefContext, toolDefGuide, toolDefReadLiveSet, toolDefUpdateLiveSet, toolDefReadTrack, toolDefCreateTrack, toolDefUpdateTrack, toolDefReadScene, toolDefCreateScene, toolDefUpdateScene, toolDefReadClip, toolDefCreateClip, toolDefUpdateClip, toolDefMicrosectionMute, toolDefAutomate, toolDefReadDevice, toolDefCreateDevice, toolDefUpdateDevice, toolDefDelete, toolDefDuplicate, toolDefSelect, toolDefPlayback, toolDefGenerate, toolDefBrowse ];
+const STANDARD_TOOL_DEFS = [ toolDefConnect, toolDefContext, toolDefGuide, toolDefReadLiveSet, toolDefUpdateLiveSet, toolDefReadTrack, toolDefCreateTrack, toolDefUpdateTrack, toolDefReadScene, toolDefCreateScene, toolDefUpdateScene, toolDefReadClip, toolDefCreateClip, toolDefUpdateClip, toolDefMicrosectionMute, toolDefAutomate, toolDefReadDevice, toolDefCreateDevice, toolDefUpdateDevice, toolDefDelete, toolDefDuplicate, toolDefSelect, toolDefPlayback, toolDefListen, toolDefGenerate, toolDefBrowse ];
 
 const TOOL_NAMES = Object.freeze(STANDARD_TOOL_DEFS.map(td => td.toolName));
 
