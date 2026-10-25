@@ -64,6 +64,35 @@ describe("updateClip - Properties and ID handling", () => {
     expect(result).toStrictEqual({ id: "123" });
   });
 
+  it("gives each clip its own start and length from comma-separated lists", async () => {
+    const loop = { looping: 1, loop_start: 0, loop_end: 16, end_marker: 16 };
+
+    setupMidiClipMock(mocks.clip123, loop);
+    setupMidiClipMock(mocks.clip456, loop);
+
+    await updateClip({ ids: "123,456", start: "2|1,3|1", length: "1:0,2:0" });
+
+    expect(mocks.clip123.set).toHaveBeenCalledWith("loop_start", 4);
+    expect(mocks.clip123.set).toHaveBeenCalledWith("loop_end", 8);
+    expect(mocks.clip456.set).toHaveBeenCalledWith("loop_start", 8);
+    expect(mocks.clip456.set).toHaveBeenCalledWith("loop_end", 16);
+  });
+
+  it("leaves clips past the end of a start list unchanged", async () => {
+    const loop = { looping: 1, loop_start: 0, loop_end: 16, end_marker: 16 };
+
+    setupMidiClipMock(mocks.clip123, loop);
+    setupMidiClipMock(mocks.clip456, loop);
+
+    await updateClip({ ids: "123,456", start: "2|1," });
+
+    expect(mocks.clip123.set).toHaveBeenCalledWith("loop_start", 4);
+    expect(mocks.clip456.set).not.toHaveBeenCalledWith(
+      "loop_start",
+      expect.anything(),
+    );
+  });
+
   it("should handle boolean false values correctly", async () => {
     setupMidiClipMock(mocks.clip123);
 

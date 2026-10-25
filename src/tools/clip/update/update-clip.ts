@@ -25,6 +25,7 @@ import {
 import {
   getColorForIndex,
   parseCommaSeparatedColors,
+  parseCommaSeparatedValues,
 } from "#src/tools/shared/validation/color-utils.ts";
 import { validateIdTypes } from "#src/tools/shared/validation/id-validation.ts";
 import {
@@ -169,6 +170,8 @@ export async function updateClip(
   const nonSurvivorClipIds = computeNonSurvivorClipIds(mutableClips, arrangementStartBeats, arrangementLengthBeats);
 
   const parsedNames = parseNames(name, mutableClips.length, "updateClip");
+  const count = mutableClips.length;
+  const regionFor = regionValues({ start, length, firstStart }, count);
   const parsedColors = parseCommaSeparatedColors(color, mutableClips.length);
   const updatedClips: ClipResult[] = [];
   const tracksWithMovedClips = new Map<number, number>();
@@ -195,9 +198,7 @@ export async function updateClip(
       name: getNameForIndex(name, i, parsedNames),
       color: getColorForIndex(color, i, parsedColors),
       timeSignature,
-      start,
-      length,
-      firstStart,
+      ...regionFor(i),
       looping,
       legato,
       muted,
@@ -312,4 +313,41 @@ function applySplittingIfNeeded(
   }
 
   return clips;
+}
+
+interface RegionParams {
+  start?: string;
+  length?: string;
+  firstStart?: string;
+}
+
+/**
+ * Region params take one value for all clips or a comma-separated value per
+ * clip, like name; clips past the end of a list (or with an empty entry) keep
+ * their region
+ * @param params - start, length and firstStart as passed
+ * @param count - Number of clips being updated
+ * @returns The region values for a given clip index
+ */
+function regionValues(
+  params: RegionParams,
+  count: number,
+): (index: number) => RegionParams {
+  const lists = {
+    start: parseCommaSeparatedValues(params.start, count),
+    length: parseCommaSeparatedValues(params.length, count),
+    firstStart: parseCommaSeparatedValues(params.firstStart, count),
+  };
+
+  const pick = (key: keyof RegionParams, index: number) => {
+    const value = getNameForIndex(params[key], index, lists[key]);
+
+    return value === "" ? undefined : value;
+  };
+
+  return (index) => ({
+    start: pick("start", index),
+    length: pick("length", index),
+    firstStart: pick("firstStart", index),
+  });
 }
