@@ -3,8 +3,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 import { describe, expect, it } from "vitest";
+import { applyTransforms } from "#src/notation/transform/transform-evaluator.ts";
 import {
   abletonBeatsToBarBeat,
+  abletonBeatsToBarBeatDuration,
   barBeatToAbletonBeats,
   barBeatToBeats,
   beatsToBarBeat,
@@ -441,5 +443,41 @@ describe("barbeat-time utilities", () => {
       expect(abletonBeatsToBarBeat(7.5, 15, 8)).toBe("2|1");
       expect(barBeatToAbletonBeats("2|1", 15, 8)).toBe(7.5);
     });
+  });
+});
+
+describe("values just below a bar line", () => {
+  it("rolls over to the next bar instead of showing beat 5 in 4/4", () => {
+    expect(beatsToBarBeat(3.9999, 4)).toBe("2|1");
+    expect(beatsToBarBeat(7.9996, 4)).toBe("3|1");
+  });
+
+  it("keeps a value that is really inside the bar", () => {
+    expect(beatsToBarBeat(3.9994, 4)).toBe("1|4.999");
+  });
+
+  it("keeps beat 5 where the bar has one (9/8)", () => {
+    expect(abletonBeatsToBarBeat(2, 9, 8)).toBe("1|5");
+  });
+
+  it("reports a whole bar as 1:0, not 0:4", () => {
+    expect(abletonBeatsToBarBeatDuration(3.9999, 4, 4)).toBe("1:0");
+  });
+
+  it("lets a transform aimed at the bar shown reach the note", () => {
+    const notes = [
+      {
+        pitch: 60,
+        start_time: 3.9999,
+        duration: 1,
+        velocity: 100,
+        probability: 1,
+        velocity_deviation: 0,
+      },
+    ];
+
+    applyTransforms(notes, "2|1-2|4: velocity = 50", 4, 4);
+
+    expect(notes[0]?.velocity).toBe(50);
   });
 });

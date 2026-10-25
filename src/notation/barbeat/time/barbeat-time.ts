@@ -43,8 +43,11 @@ export function parseBeatsPerBar(options: BeatsPerBarOptions = {}): number {
  * @returns Formatted bar|beat string
  */
 export function beatsToBarBeat(beats: number, beatsPerBar: number): string {
-  const bar = Math.floor(beats / beatsPerBar) + 1;
-  const beat = (beats % beatsPerBar) + 1;
+  // Round before splitting, like the note serializer: a value just below a
+  // bar line would otherwise round its beat up past the bar (1|5 in 4/4)
+  const rounded = roundToThousandth(beats);
+  const bar = Math.floor(rounded / beatsPerBar) + 1;
+  const beat = (rounded % beatsPerBar) + 1;
 
   // Format beat - avoid unnecessary decimals
 
@@ -152,7 +155,9 @@ export function abletonBeatsToBarBeatDuration(
   }
 
   // Convert Ableton beats to musical beats
-  const musicalBeats = abletonBeats * (timeSigDenominator / 4);
+  const musicalBeats = roundToThousandth(
+    abletonBeats * (timeSigDenominator / 4),
+  );
   const musicalBeatsPerBar = timeSigNumerator;
 
   // Calculate bars and remaining beats (0-based for duration)
@@ -330,4 +335,13 @@ export function barBeatDurationToAbletonBeats(
   );
 
   return musicalBeats * (4 / timeSigDenominator);
+}
+
+/**
+ * Round to the 3 decimals bar|beat output shows
+ * @param value - Beats
+ * @returns Value rounded to a thousandth of a beat
+ */
+function roundToThousandth(value: number): number {
+  return Math.round(value * 1000) / 1000;
 }
