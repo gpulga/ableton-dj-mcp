@@ -14,8 +14,6 @@
 >
 > It is the most complete way to share something with someone: two people inside
 > the same sound, at the same moment.
->
-> — Gabriel Pulga, creator
 
 [Read the full vision →](./docs/Vision.md)
 

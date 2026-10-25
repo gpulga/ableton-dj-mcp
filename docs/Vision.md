@@ -8,8 +8,6 @@
 >
 > It is the most complete way to share something with someone: two people inside
 > the same sound, at the same moment.
->
-> — Gabriel Pulga, creator of Ableton DJ MCP
 
 That is why this exists. A dancefloor is the clearest example we know: people
 who have never met, moving to the same kick, feeling the same breakdown, waiting
