@@ -94,7 +94,7 @@ export const toolDefUpdateClip = defineTool("adj-update-clip", {
       .string()
       .optional()
       .describe(
-        `comma-separated bar|beat positions to split clip (e.g., '2|1, 3|1') - max ${MAX_SPLIT_POINTS} points, arrangement clips only`,
+        `comma-separated song positions to split at, like arrangementStart (e.g., '33|1, 41|1'); each clip splits at the ones inside it - max ${MAX_SPLIT_POINTS} points, arrangement clips only`,
       ),
 
     // Audio clip parameters

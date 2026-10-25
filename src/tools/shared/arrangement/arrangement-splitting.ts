@@ -2,7 +2,10 @@
 // Copyright (C) 2026 Gabriel Pulga
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-import { barBeatToAbletonBeats } from "#src/notation/barbeat/time/barbeat-time.ts";
+import {
+  abletonBeatsToBarBeat,
+  barBeatToAbletonBeats,
+} from "#src/notation/barbeat/time/barbeat-time.ts";
 import { livePath } from "#src/shared/live-api-path-builders.ts";
 import * as console from "#src/shared/v8-max-console.ts";
 import { MAX_SPLIT_POINTS } from "#src/tools/constants.ts";
@@ -27,8 +30,9 @@ interface SplitClipRange {
 }
 
 /**
- * Parse comma-separated bar|beat positions into beat offsets from clip start.
- * Positions use clip-local coordinates where 1|1 is the clip start.
+ * Parse comma-separated bar|beat positions into song positions in beats.
+ * Positions are arrangement positions, like arrangementStart: 1|1 is the
+ * start of the song, not of the clip.
  * @param splitStr - Comma-separated bar|beat positions (e.g., "2|1, 3|1, 4|1")
  * @param timeSigNumerator - Time signature numerator
  * @param timeSigDenominator - Time signature denominator
@@ -67,7 +71,7 @@ function parseSplitPoints(
  * @param split - Comma-separated bar|beat positions (e.g., "2|1, 3|1, 4|1")
  * @param arrangementClips - Array of arrangement clips
  * @param warnings - Set to track warnings already issued
- * @returns Array of beat offsets or null
+ * @returns Song positions in beats, or null
  */
 export function prepareSplitParams(
   split: string | undefined,
@@ -123,19 +127,7 @@ export function prepareSplitParams(
     return null;
   }
 
-  // Filter out points at 0 (can't split at the very start)
-  const validPoints = splitPoints.filter((p) => p > 0);
-
-  if (validPoints.length === 0) {
-    if (!warnings.has("split-no-valid-points")) {
-      console.warn("No valid split points (all at or before clip start)");
-      warnings.add("split-no-valid-points");
-    }
-
-    return null;
-  }
-
-  return validPoints;
+  return splitPoints;
 }
 
 interface SplitSingleClipArgs {
@@ -178,10 +170,17 @@ function splitSingleClip(args: SplitSingleClipArgs): boolean {
     return false;
   }
 
-  // Filter split points to those within clip bounds
-  const validPoints = splitPoints.filter((p) => p > 0 && p < clipLength);
+  // Split points are song positions; keep the ones inside this clip, as
+  // offsets from its start
+  const validPoints = splitPoints
+    .map((p) => p - clipArrangementStart)
+    .filter((p) => p > 0 && p < clipLength);
 
   if (validPoints.length === 0) {
+    console.warn(
+      `split: no position falls inside the clip at ${formatSongPosition(clipArrangementStart)}-${formatSongPosition(clipArrangementEnd)}; split positions are song positions, like arrangementStart`,
+    );
+
     return false;
   }
 
@@ -387,7 +386,7 @@ function rescanSplitClips(
  * warning is emitted. This is consistent with update-clip error handling patterns.
  *
  * @param arrangementClips - Array of arrangement clips to split
- * @param splitPoints - Array of beat offsets from clip start (relative to 1|1)
+ * @param splitPoints - Song positions in beats
  * @param clips - Array to update with fresh clips after splitting
  * @param _context - Internal context object
  */
@@ -411,4 +410,18 @@ export function performSplitting(
   }
 
   rescanSplitClips(splitClipRanges, clips);
+}
+
+/**
+ * @param beats - Song position in beats
+ * @returns The position as bar|beat in the song's time signature
+ */
+function formatSongPosition(beats: number): string {
+  const liveSet = LiveAPI.from(livePath.liveSet);
+
+  return abletonBeatsToBarBeat(
+    beats,
+    liveSet.getProperty("signature_numerator") as number,
+    liveSet.getProperty("signature_denominator") as number,
+  );
 }
