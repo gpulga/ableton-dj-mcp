@@ -36,11 +36,15 @@ export const toolDefUpdateClip = defineTool("adj-update-clip", {
     start: z
       .string()
       .optional()
-      .describe("bar|beat position where loop/clip region begins"),
+      .describe(
+        "bar|beat position where loop/clip region begins; comma-separated for one per id",
+      ),
     length: z
       .string()
       .optional()
-      .describe("duration in bar:beat (e.g., '4:0' = 4 bars)"),
+      .describe(
+        "duration in bar:beat (e.g., '4:0' = 4 bars); comma-separated for one per id",
+      ),
     looping: z.boolean().optional().describe("enable looping for the clip"),
 
     legato: z
@@ -68,7 +72,7 @@ export const toolDefUpdateClip = defineTool("adj-update-clip", {
       .string()
       .optional()
       .describe(
-        "bar|beat playback start (looping clips, when different from start)",
+        "bar|beat playback start (looping clips, when different from start); comma-separated for one per id",
       ),
     arrangementStart: z
       .string()
