@@ -2,14 +2,15 @@
 // Copyright (C) 2026 Gabriel Pulga
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-import {
-  abletonBeatsToBarBeat,
-  barBeatDurationToAbletonBeats,
-} from "#src/notation/barbeat/time/barbeat-time.ts";
+import { barBeatDurationToAbletonBeats } from "#src/notation/barbeat/time/barbeat-time.ts";
 import { errorMessage } from "#src/shared/error-utils.ts";
 import { livePath } from "#src/shared/live-api-path-builders.ts";
 import * as console from "#src/shared/v8-max-console.ts";
 import { updateClip } from "#src/tools/clip/update/update-clip.ts";
+import {
+  canStretchLoop,
+  duplicateAsOneLoop,
+} from "#src/tools/shared/arrangement/arrangement-loop-stretch.ts";
 import { type TilingContext } from "#src/tools/shared/arrangement/arrangement-tiling-helpers.ts";
 import { createShortenedClipInHolding } from "#src/tools/shared/arrangement/arrangement-tiling-holding.ts";
 import {
@@ -22,7 +23,12 @@ import {
   warnArrangementWriteEffects,
 } from "#src/tools/shared/arrangement/arrangement-write-effects.ts";
 import { toLiveApiId } from "#src/tools/shared/utils.ts";
-import { formatSlot } from "#src/tools/shared/validation/position-parsing.ts";
+import {
+  getMinimalClipInfo,
+  type MinimalClipInfo,
+} from "./duplicate-clip-info.ts";
+
+export { getMinimalClipInfo, type MinimalClipInfo };
 
 /**
  * Parse arrangementLength from bar:beat duration format to absolute beats
@@ -67,82 +73,6 @@ export function parseArrangementLength(
   }
 }
 
-export interface MinimalClipInfo {
-  id: string;
-  slot?: string;
-  trackIndex?: number;
-  arrangementStart?: string;
-  name?: string;
-}
-
-/**
- * Get minimal clip information for result objects
- * @param clip - The clip to get info from
- * @param omitFields - Optional fields to omit from result
- * @returns Minimal clip info object
- */
-export function getMinimalClipInfo(
-  clip: LiveAPI,
-  omitFields: string[] = [],
-): MinimalClipInfo {
-  const isArrangementClip =
-    (clip.getProperty("is_arrangement_clip") as number) > 0;
-
-  if (isArrangementClip) {
-    const trackIndex = clip.trackIndex;
-
-    if (trackIndex == null) {
-      throw new Error(
-        `getMinimalClipInfo failed: could not determine trackIndex for clip (path="${clip.path}")`,
-      );
-    }
-
-    const arrangementStartBeats = clip.getProperty("start_time") as number;
-    // Convert to bar|beat format using song time signature
-    const liveSet = LiveAPI.from(livePath.liveSet);
-    const timeSigNum = liveSet.getProperty("signature_numerator") as number;
-    const timeSigDenom = liveSet.getProperty("signature_denominator") as number;
-    const arrangementStart = abletonBeatsToBarBeat(
-      arrangementStartBeats,
-      timeSigNum,
-      timeSigDenom,
-    );
-
-    const result: MinimalClipInfo = {
-      id: clip.id,
-    };
-
-    if (!omitFields.includes("trackIndex")) {
-      result.trackIndex = trackIndex;
-    }
-
-    if (!omitFields.includes("arrangementStart")) {
-      result.arrangementStart = arrangementStart;
-    }
-
-    return result;
-  }
-
-  const trackIndex = clip.trackIndex;
-  const sceneIndex = clip.sceneIndex;
-
-  if (trackIndex == null || sceneIndex == null) {
-    throw new Error(
-      `getMinimalClipInfo failed: could not determine trackIndex/sceneIndex for clip (path="${clip.path}")`,
-    );
-  }
-
-  const result: MinimalClipInfo = {
-    id: clip.id,
-  };
-
-  if (!omitFields.includes("slot")) {
-    result.slot = formatSlot(trackIndex, sceneIndex);
-  }
-
-  return result;
-}
-
 /**
  * Create clips to fill the specified arrangement length
  * @param sourceClip - The source clip to duplicate
@@ -168,6 +98,20 @@ export async function createClipsForLength(
   const sourceClipLength = sourceClip.getProperty("length") as number;
   const isMidiClip = sourceClip.getProperty("is_midi_clip") === 1;
   const duplicatedClips: MinimalClipInfo[] = [];
+
+  // A looping session clip lengthens into one clip that repeats its loop
+  if (arrangementLengthBeats > sourceClipLength && canStretchLoop(sourceClip)) {
+    const newClip = duplicateAsOneLoop(
+      sourceClip,
+      track,
+      arrangementStartBeats,
+      arrangementLengthBeats,
+    );
+
+    newClip.setAll({ name, color });
+
+    return [getMinimalClipInfo(newClip, omitFields)];
+  }
 
   // Refuse a runaway repeat before the first copy lands, not after
   assertRepeatFits(arrangementLengthBeats, sourceClipLength);
