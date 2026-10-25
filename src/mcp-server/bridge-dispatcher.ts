@@ -8,6 +8,7 @@
 
 import { formatErrorResponse } from "#src/shared/mcp-response-utils.ts";
 import { handleAutomate } from "#src/tools/clip/automate/automate-handler.ts";
+import { handleListen } from "#src/tools/control/listen/listen-handler.ts";
 import {
   type ConvertTrackArgs,
   handleConvertClip,
@@ -50,6 +51,10 @@ export function makeBridgeDispatcher(
   const dispatch = async (tool: string, args: object): Promise<object> => {
     if (tool === "adj-browse") {
       return await handleBrowse(bridge, args);
+    }
+
+    if (tool === "adj-listen") {
+      return await handleListen(next, args);
     }
 
     if (tool === "adj-automate") {

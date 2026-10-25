@@ -21,6 +21,10 @@ import { VERSION } from "#src/shared/version.ts";
 import { logger } from "./file-logger.ts";
 import { LazyBoot } from "./lazy-boot.ts";
 
+// adj-listen records in real time (64 bars at 60 BPM is ~4.3 minutes), well
+// past the SDK's 60s default request timeout
+const TOOL_CALL_TIMEOUT_MS = 6 * 60 * 1000;
+
 const SETUP_URL =
   "https://github.com/gpulga/ableton-dj-mcp/blob/main/docs/Setup.md#troubleshooting";
 
@@ -276,6 +280,8 @@ Tell the user to check ${SETUP_URL} for configuration help.
           // httpClient is guaranteed non-null after successful _ensureHttpConnection()
           const result = await (this.httpClient as Client).callTool(
             toolRequest,
+            undefined,
+            { timeout: TOOL_CALL_TIMEOUT_MS },
           );
 
           logger.debug(

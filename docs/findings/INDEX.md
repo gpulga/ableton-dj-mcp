@@ -25,6 +25,14 @@ subdirs (see `HOW-TO-WRITE.md`).
   [src/tools/live-set/**, src/tools/track/**, src/tools/clip/**] — mocked tests
   can't catch a wrong LOM property name; verify against AbletonOSC/Adam Murray's
   LOM reference before shipping a new `.set`/`getProperty` call
+- [node-dispatch-skips-zod](dev/node-dispatch-skips-zod.md)
+  [src/mcp-server/bridge-dispatcher.ts, src/tools/**/\*-handler.ts,
+  src/tools/control/listen/**] — next() calls skip Zod defaults; pass count etc
+  explicitly, String() ids, drop WARNING items before parsing
+- [session-slot-capture-exact](dev/session-slot-capture-exact.md)
+  [src/tools/control/listen/**, src/tools/control/playback*] — fire a slot from
+  a stopped transport to record at the marker; stop resets it, set it last,
+  verify the start
 - [track-freeze-missing-from-lom](dev/track-freeze-missing-from-lom.md)
   [src/tools/track/update/**] — no LOM hook to trigger freeze/flatten on a
   track, only read-only can_be_frozen/is_frozen; feature removed, don't re-add

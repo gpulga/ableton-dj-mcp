@@ -172,6 +172,27 @@ describe("makeBridgeDispatcher", () => {
     expect(bridge.loadItem).toHaveBeenCalledTimes(1);
   });
 
+  it("routes adj-listen to the listen handler without needing the bridge", async () => {
+    const bridge = makeFakeBridge();
+    const next = vi.fn().mockResolvedValue({
+      content: [{ type: "text", text: '{"tempo":120,"timeSignature":"4/4"}' }],
+    });
+    const dispatch = makeBridgeDispatcher(next, asBridge(bridge));
+
+    const response = (await dispatch("adj-listen", {
+      file: "/no/such/file.wav",
+    })) as McpResponse;
+
+    expect(response.isError).toBe(true);
+    expect(response.content[0]?.text).toContain(
+      "listen failed: audio file not found",
+    );
+    expect(next).toHaveBeenCalledWith("adj-read-live-set", {
+      include: ["tracks", "locators"],
+    });
+    expect(bridge.ensureAlive).not.toHaveBeenCalled();
+  });
+
   it("routes adj-automate through the automation handler", async () => {
     const bridge = makeFakeBridge({
       automationClear: vi.fn().mockResolvedValue({ cleared: "all" }),

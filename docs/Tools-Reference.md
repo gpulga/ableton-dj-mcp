@@ -1,6 +1,6 @@
 # Tools Reference
 
-Canonical catalog of all 25 `adj-*` tools. Other docs link here instead of
+Canonical catalog of all 26 `adj-*` tools. Other docs link here instead of
 duplicating. Read the `.def.ts` files for the full Zod schemas.
 
 ---
@@ -335,6 +335,37 @@ Control transport, session clips, and Live set history.
   into one step.
 - For `"record"`, response includes `recording: boolean` reflecting the new
   record-mode state.
+
+### `adj-listen`
+
+Hear the mix by measurement: record N bars of the live output (or one track) in
+real time, or read an audio file, then analyze it. Runs in Node; recording needs
+no bridge.
+
+- `bars` — bars to record (1-64, default 8). With `file`, bars from its start
+  (default: the whole file).
+- `trackIndex` — record that track's output (post mixer) instead of the master.
+- `startTime` / `startLocator` — play the arrangement from there and record from
+  that exact position. Omit to record whatever is playing now (starts on the
+  next launch-quantization boundary).
+- `mute` — comma-separated track indexes muted during the recording and restored
+  after. Capture with and without a track to isolate its contribution.
+- `file` — absolute path to analyze instead of recording. WAV/AIFF decode
+  natively; mp3/flac/m4a need ffmpeg installed. Without `tempo`, tempo and the
+  first beat are detected from the audio (85-175 BPM).
+- `tempo` — bar-grid tempo for `file` (default: detected).
+- `spectrogram` — include the spectrogram image (default true).
+- `keep` — keep the recording track and clip (default: deleted afterwards).
+- Response: `source` (what was recorded, `songStart`, the WAV path), `summary`
+  (integrated LUFS, loudness range, true peak, band balance sub..air,
+  brightness, L/R correlation, kick/hat-range hit counts, key estimate), a
+  per-bar table (4-bar phrases past 64 bars), loudness `jumps` of 3 LU or more,
+  and a log-frequency spectrogram PNG with bar lines.
+- Recording uses a temporary audio track that records from Resampling into a
+  session slot. That way playing session clips are never printed into the
+  arrangement. Recording takes real time: 8 bars at 124 BPM is about 16 s.
+- "kick" and "hat" columns count onsets in the 30-150 Hz and 6-16 kHz ranges. A
+  rolling bassline also counts as kick-range hits.
 
 ---
 

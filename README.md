@@ -94,7 +94,7 @@ Cmd+Z undoes one AI action at a time.
 | **Perform**     | Play, stop, loop, fire scenes and clips, record, capture MIDI, undo and redo                                       |
 | **Know-how**    | Genre guides for house, tech house, indie dance, melodic techno, afro house, techno, psytrance, loaded on demand   |
 
-25 tools, all prefixed `adj-`. Full parameters:
+26 tools, all prefixed `adj-`. Full parameters:
 [Tools Reference](./docs/Tools-Reference.md).
 
 ## How it works
