@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.8.0](https://github.com/gpulga/ableton-dj-mcp/compare/ableton-dj-mcp-v2.7.0...ableton-dj-mcp-v2.8.0) (2026-10-25)
+
+
+### Features
+
+* add adj-listen to record and analyze the mix ([#388](https://github.com/gpulga/ableton-dj-mcp/issues/388)) ([79c4a8b](https://github.com/gpulga/ableton-dj-mcp/commit/79c4a8b5361add86039d9124665804c93ffce851))
+
 ## [2.7.0](https://github.com/gpulga/ableton-dj-mcp/compare/ableton-dj-mcp-v2.6.0...ableton-dj-mcp-v2.7.0) (2026-10-25)
 
 
