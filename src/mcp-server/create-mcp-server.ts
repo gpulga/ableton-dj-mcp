@@ -10,6 +10,7 @@ import { toolDefCreateClip } from "#src/tools/clip/create/create-clip.def.ts";
 import { toolDefMicrosectionMute } from "#src/tools/clip/microsection-mute/microsection-mute.def.ts";
 import { toolDefReadClip } from "#src/tools/clip/read/read-clip.def.ts";
 import { toolDefUpdateClip } from "#src/tools/clip/update/update-clip.def.ts";
+import { toolDefListen } from "#src/tools/control/listen/listen.def.ts";
 import { toolDefPlayback } from "#src/tools/control/playback.def.ts";
 import { toolDefRawLiveApi } from "#src/tools/control/raw-live-api.def.ts";
 import { toolDefSelect } from "#src/tools/control/select.def.ts";
@@ -61,6 +62,7 @@ export const STANDARD_TOOL_DEFS: ToolDefFunction[] = [
   toolDefDuplicate,
   toolDefSelect,
   toolDefPlayback,
+  toolDefListen,
   toolDefGenerate,
   toolDefBrowse,
 ];

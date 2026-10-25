@@ -538,10 +538,11 @@ describe("StdioHttpBridge", () => {
         callToolRequest("test-tool", { arg1: "value1" }),
       )) as { result: unknown; toolResult: unknown };
 
-      expect(mockClient.callTool).toHaveBeenCalledWith({
-        name: "test-tool",
-        arguments: { arg1: "value1" },
-      });
+      expect(mockClient.callTool).toHaveBeenCalledWith(
+        { name: "test-tool", arguments: { arg1: "value1" } },
+        undefined,
+        { timeout: 360_000 },
+      );
       expect(result).toStrictEqual(toolResult);
       expect(logger.debug).toHaveBeenCalledWith(
         "[Bridge] Tool call successful for test-tool",
@@ -569,10 +570,11 @@ describe("StdioHttpBridge", () => {
         { params: { name: "test-tool" } }, // arguments is undefined
       )) as { result: unknown; toolResult: unknown };
 
-      expect(mockClient.callTool).toHaveBeenCalledWith({
-        name: "test-tool",
-        arguments: {},
-      });
+      expect(mockClient.callTool).toHaveBeenCalledWith(
+        { name: "test-tool", arguments: {} },
+        undefined,
+        { timeout: 360_000 },
+      );
       expect(result).toStrictEqual(toolResult);
     });
 

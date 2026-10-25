@@ -139,6 +139,8 @@ ${productionSkillsSummary()}
 
 **Automation:** Use adj-automate to write parameter envelopes inside a clip (requires the Live Browser Bridge). Points are \`bar|beat:value\` pairs with values normalized 0..1 (e.g. \`points: "1|1:0, 9|1:1"\` sweeps over 8 bars). Target a device param via \`devicePath\` + \`paramName\`, or omit \`devicePath\` for mixer params (Volume, Pan, Send A..L). Shapes: linear, exponential, logarithmic, sine, s-curve, step. Recipes generate the points for common moves — call \`adj-guide\` with topic \`fx-automation\` for the list.
 
+**Listening:** adj-listen records N bars of the mix (or one track, \`trackIndex\`) in real time, or reads an audio \`file\`, and returns per-bar loudness, band balance, kick/hat-range hits, pitches, a key estimate and a spectrogram image. Capture before and after a change to check it; capture with \`mute\` and without to isolate a track. For a reference track file it detects tempo and reports 4-bar phrases.
+
 ### Device Paths
 
 Slash-separated segments: \`t\`=track, \`rt\`=return, \`mt\`=master, \`d\`=device, \`c\`=chain, \`rc\`=return chain, \`p\`=drum pad

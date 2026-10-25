@@ -129,6 +129,7 @@ describe("MCP Express App", () => {
         "adj-duplicate",
         "adj-select",
         "adj-playback",
+        "adj-listen",
         "adj-generate",
         "adj-browse",
         "adj-raw-live-api",
