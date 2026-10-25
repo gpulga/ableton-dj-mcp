@@ -1,4 +1,4 @@
-<img src="docs/images/banner.svg" alt="Ableton DJ MCP, made for electronic music producers. A hand-drawn sketch of four decks and a mixer." width="100%">
+<img src="docs/images/banner.svg" alt="Ableton DJ MCP, made for electronic music production. A hand-drawn sketch of four decks and a mixer." width="100%">
 
 [![CI](https://github.com/gpulga/ableton-dj-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/gpulga/ableton-dj-mcp/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/gpulga/ableton-dj-mcp?label=release)](https://github.com/gpulga/ableton-dj-mcp/releases/latest)
