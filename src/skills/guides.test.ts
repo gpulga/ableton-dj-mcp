@@ -14,6 +14,7 @@ import {
 } from "./guides.ts";
 import { productionTechniquesSkills } from "./production-techniques.ts";
 import { skills } from "./standard.ts";
+import { transformsSkills } from "./transforms.ts";
 
 type Ref = readonly [string, string];
 
@@ -31,6 +32,7 @@ describe("guides", () => {
       ...[...splitSections(productionTechniquesSkills).keys()].map(
         (h) => `pt:${h}`,
       ),
+      ...[...splitSections(transformsSkills).keys()].map((h) => `tf:${h}`),
     ].sort();
     const used = allRefs.map(([source, heading]) => `${source}:${heading}`);
 

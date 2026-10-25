@@ -26,12 +26,13 @@ disabled.
 
 ### `adj-guide`
 
-Genre and production guidance, loaded on demand so it doesn't cost tokens on
-every `adj-connect`. `adj-connect` returns the topic list; fetch a topic before
-that kind of work. Read-only, no Live access.
+Genre, production and transform guidance, loaded on demand so it doesn't cost
+tokens on every `adj-connect`. `adj-connect` returns the topic list; fetch a
+topic before that kind of work. Read-only, no Live access.
 
 - `topic` — `genres`, `drums`, `bass`, `melodic`, `arrangement`,
-  `fx-automation`, or `velocity`
+  `fx-automation`, `velocity`, or `transforms` (the full transform-expression
+  reference: selectors, waveforms, ramp/curve, variables)
 
 ---
 

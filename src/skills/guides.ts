@@ -9,10 +9,12 @@
 
 import { electronicMusicSkills } from "./electronic-music.ts";
 import { productionTechniquesSkills } from "./production-techniques.ts";
+import { transformsSkills } from "./transforms.ts";
 
 const SOURCES = {
   em: electronicMusicSkills,
   pt: productionTechniquesSkills,
+  tf: transformsSkills,
 } as const;
 
 type SourceKey = keyof typeof SOURCES;
@@ -38,6 +40,7 @@ export function splitSections(markdown: string): Map<string, string> {
 const sectionsBySource: Record<SourceKey, Map<string, string>> = {
   em: splitSections(SOURCES.em),
   pt: splitSections(SOURCES.pt),
+  tf: splitSections(SOURCES.tf),
 };
 
 /**
@@ -112,6 +115,11 @@ export const GUIDE_TOPICS = {
   velocity: {
     summary: "velocity ranges per element across genres",
     sections: [["em", "Velocity Reference (all genres)"]],
+  },
+  transforms: {
+    summary:
+      "transform expressions: selectors, waveforms, ramp/curve, variables, examples",
+    sections: [["tf", "Transforms"]],
   },
 } as const satisfies Record<
   string,
