@@ -49,6 +49,22 @@ When a release is created, `release.yml` checks out the tag and runs
 Run `npm run release:package` locally to inspect them in `release/`
 (gitignored). It needs `zip` on PATH.
 
+## Version labels on issues
+
+After packaging, `release.yml` runs `npm run release:label -- <tag>`. It labels
+every issue the release closed with the version (e.g. `2.6.0`), and the PRs that
+closed them too. A PR counts when its squash commit (`... (#N)`) is between the
+previous release tag and this one. An issue counts when the PR closes it
+(`Fixes #N`) or references it (`Refs #N`) and the issue is closed by release
+time. Issues still open, like partly done work, aren't labeled.
+
+To label a past release, or redo one, run it locally (needs `gh` logged in and
+tags fetched):
+
+```bash
+npm run release:label -- ableton-dj-mcp-v2.6.0
+```
+
 ## Deploying a new version locally
 
 `dist/` is rebuilt once per release, not on every merge. The release workflow
