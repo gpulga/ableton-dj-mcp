@@ -107,22 +107,13 @@ describe("prepareSplitParams", () => {
     expect(result).toStrictEqual([4, 8]); // Sorted and deduplicated
   });
 
-  it("should filter out split points at clip start (1|1)", () => {
+  it("returns split points as song positions, 1|1 included", () => {
     const { mockClip, warnings } = setupPrepareTest();
 
     const result = prepareSplitParams("1|1, 2|1", [mockClip], warnings);
 
-    // 1|1 = 0 beats (filtered out), 2|1 = 4 beats
-    expect(result).toStrictEqual([4]);
-  });
-
-  it("should warn when all split points are at or before clip start", () => {
-    const { mockClip, warnings } = setupPrepareTest();
-
-    const result = prepareSplitParams("1|1", [mockClip], warnings);
-
-    expect(result).toBeNull();
-    expect(warnings.has("split-no-valid-points")).toBe(true);
+    // Song positions: 1|1 = 0 beats, 2|1 = 4 beats
+    expect(result).toStrictEqual([0, 4]);
   });
 
   it("should warn when too many split points", () => {
@@ -177,6 +168,56 @@ describe("performSplitting", () => {
 
     // Should create segments via duplication
     expectDuplicateCalled(callState.trackMock);
+  });
+
+  it("splits a clip that starts later at a song position, not a clip offset", () => {
+    const clipId = "clip_1";
+
+    // Clip on the timeline from 80 to 96 beats (21|1 to 25|1)
+    const { callState } = setupClipSplittingMocks(clipId, {
+      looping: true,
+      startTime: 80,
+      endTime: 96,
+      loopEnd: 16,
+    });
+    const { mockClip, clips } = createPerformContext(clipId);
+
+    // Song position 88 beats (23|1) is 8 beats into the clip
+    performSplitting([mockClip], [88], clips, HOLDING_AREA);
+
+    expectDuplicateCalled(callState.trackMock);
+
+    // The right-trim lands at the song position of the split
+    const firstTrim = callState.trackMock.call.mock.calls.find(
+      (c: unknown[]) => c[0] === "create_midi_clip",
+    ) as unknown[];
+
+    expect(firstTrim[1]).toBe(88);
+  });
+
+  it("warns with the clip's span when no split position falls inside it", () => {
+    const clipId = "clip_1";
+
+    const { callState } = setupClipSplittingMocks(clipId, {
+      looping: true,
+      startTime: 80,
+      endTime: 96,
+      loopEnd: 16,
+    });
+    const { mockClip, clips } = createPerformContext(clipId);
+
+    // 2|1 as a song position is before this clip
+    performSplitting([mockClip], [4], clips, HOLDING_AREA);
+
+    expect(callState.trackMock.call).not.toHaveBeenCalledWith(
+      "duplicate_clip_to_arrangement",
+      expect.anything(),
+      expect.anything(),
+    );
+    expect(outlet).toHaveBeenCalledWith(
+      1,
+      "split: no position falls inside the clip at 21|1-25|1; split positions are song positions, like arrangementStart",
+    );
   });
 
   it("should skip clips where all split points are beyond clip length", () => {

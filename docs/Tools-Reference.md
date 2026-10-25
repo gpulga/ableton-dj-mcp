@@ -140,6 +140,11 @@ Update existing clip content or properties.
 - Update name, color, loop settings, volume, pitch (`pitchShift` coarse,
   `pitchFine` cents), `legato`, `muted`, `ramMode`, `velocityAmount` (MIDI)
 - `duplicateLoop: true` doubles the clip's loop length in-place
+- `split: "33|1, 41|1"` splits arrangement clips at song positions, the same
+  coordinates as `arrangementStart`. Each clip splits at the positions inside
+  it; a clip with none inside gets a warning
+- `start`, `length` and `firstStart` take one value for all clips, or a
+  comma-separated value per id
 - Transform expressions: `velocity *= 0.8`, `pitch += 12`
 
 ### `adj-microsection-mute`
