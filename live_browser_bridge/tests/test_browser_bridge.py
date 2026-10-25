@@ -6,6 +6,7 @@
 are not imported here; BrowserBridge.py falls back to a stub base class when
 they're unavailable, so the module imports cleanly outside Live."""
 
+import errno
 import json
 import os
 import sys
@@ -41,7 +42,7 @@ def _make_bridge(socket_):
 
 class SendFallbackTest(unittest.TestCase):
     def test_oversized_reply_sends_reply_too_large(self):
-        sock = FakeSocket([OSError(40, "Message too long"), None])
+        sock = FakeSocket([OSError(errno.EMSGSIZE, "Message too long"), None])
         bridge = _make_bridge(sock)
 
         bridge._send("addr", {"id": "req_1", "ok": True, "result": {"items": []}})
@@ -53,7 +54,7 @@ class SendFallbackTest(unittest.TestCase):
         self.assertEqual(fallback["error"]["code"], "REPLY_TOO_LARGE")
 
     def test_other_send_failure_sends_send_failed(self):
-        sock = FakeSocket([OSError(9, "Bad file descriptor"), None])
+        sock = FakeSocket([OSError(errno.EBADF, "Bad file descriptor"), None])
         bridge = _make_bridge(sock)
 
         bridge._send("addr", {"id": "req_2", "ok": True, "result": {}})
@@ -62,13 +63,13 @@ class SendFallbackTest(unittest.TestCase):
         self.assertEqual(fallback["error"]["code"], "SEND_FAILED")
 
     def test_fallback_send_failure_does_not_raise(self):
-        sock = FakeSocket([OSError(40, "Message too long"), OSError(9, "still broken")])
+        sock = FakeSocket([OSError(errno.EMSGSIZE, "Message too long"), OSError(9, "still broken")])
         bridge = _make_bridge(sock)
 
         bridge._send("addr", {"id": "req_3", "ok": True, "result": {}})  # must not raise
 
     def test_missing_id_skips_fallback(self):
-        sock = FakeSocket([OSError(40, "Message too long")])
+        sock = FakeSocket([OSError(errno.EMSGSIZE, "Message too long")])
         bridge = _make_bridge(sock)
 
         bridge._send("addr", {"id": None, "ok": True, "result": {}})
