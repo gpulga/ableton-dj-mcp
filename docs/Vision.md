@@ -37,10 +37,11 @@ its own work, while you stay in the creative seat.
 - **It should listen.** Writing notes isn't enough. A real partner hears the
   music and checks its own changes, the way a producer does.
 
-## The sound we build toward
+## Your sound
 
-Hypnotic, patient, melodic dance music: rolling basslines, long builds, reveals
-that take their time, and grooves that are simple and still hit.
+Taste is personal. There is no default sound here: the tool adapts to yours.
+Tell it the artists and records you love, and it uses them as the reference for
+grooves, pacing and sound, so what you make together still sounds like you.
 
 ## Open by default
 

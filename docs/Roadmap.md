@@ -46,6 +46,8 @@ _The AI knows your sound._
 Every producer has a signature. The tool learns yours, from your sessions and
 your references, and brings it back to every new track.
 
+- Your references, set your way: name the artists and records you love during
+  setup or any time later, never as a required step
 - Reference tracks as targets: match the energy curve, the low end, the space
 - A memory of your decisions: the sounds you reach for, the moves you reject
 - Genre and arrangement knowledge that goes deep, not wide
