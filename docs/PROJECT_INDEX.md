@@ -5,6 +5,9 @@ this to orient before any task; load the linked file when relevant.
 
 ## Install and use
 
+- [Vision.md](Vision.md) — why the project exists, principles, who it's for
+- [Roadmap.md](Roadmap.md) — long-term horizons; near-term work is issue #344
+
 - [Setup.md](Setup.md) — end-user install (`npm run setup`), client wiring,
   AI-agent install checklist, troubleshooting
 
