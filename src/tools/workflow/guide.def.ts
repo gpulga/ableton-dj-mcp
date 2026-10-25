@@ -9,7 +9,7 @@ import { defineTool } from "#src/tools/shared/tool-framework/define-tool.ts";
 export const toolDefGuide = defineTool("adj-guide", {
   title: "Guide",
   description:
-    "Genre and production guidance on demand. adj-connect lists the topics; fetch one before that kind of work.",
+    "Genre, production and transform guidance on demand. adj-connect lists the topics; fetch one before that kind of work.",
 
   annotations: {
     readOnlyHint: true,
