@@ -100,7 +100,7 @@ browser, clip envelopes, Live's audio conversions and undo history.
 
 [Setup](./docs/Setup.md) · [Tools](./docs/Tools-Reference.md) ·
 [Notation](./docs/specs/BarBeat-Spec.md) · [Vision](./docs/Vision.md) ·
-[Roadmap](https://github.com/gpulga/ableton-dj-mcp/issues/344) ·
+[Roadmap](./docs/Roadmap.md) · [Inspirations](./docs/Inspirations.md) ·
 [Contributing](./CLAUDE.md) ·
 [Discussions](https://github.com/gpulga/ableton-dj-mcp/discussions)
 
