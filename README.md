@@ -1,7 +1,4 @@
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/images/banner-dark.svg">
-  <img src="docs/images/banner-light.svg" alt="Ableton DJ MCP: make electronic music with Claude, inside Ableton Live" width="100%">
-</picture>
+<img src="docs/images/banner.svg" alt="Ableton DJ MCP: an AI studio partner for DJs and electronic producers, inside Ableton Live. A prompt types 'write a rolling bassline in A minor, 8 bars' and a playhead sweeps a piano roll as the notes light up." width="100%">
 
 [![CI](https://github.com/gpulga/ableton-dj-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/gpulga/ableton-dj-mcp/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/gpulga/ableton-dj-mcp?label=release)](https://github.com/gpulga/ableton-dj-mcp/releases/latest)
