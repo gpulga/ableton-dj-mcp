@@ -1032,9 +1032,9 @@ if (!Array.prototype.with) {
 
 const BUILD_INFO = {
   branch: "release-please--branches--main--components--ableton-dj-mcp",
-  sha: "215c4e68",
+  sha: "e64401d4",
   dirty: false,
-  buildTime: "2026-10-25T14:39:39.501Z",
+  buildTime: "2026-10-25T17:54:58.623Z",
   source: "release"
 };
 

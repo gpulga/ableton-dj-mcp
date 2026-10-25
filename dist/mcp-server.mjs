@@ -743,8 +743,8 @@ import os from "node:os";
 
 const BUILD_INFO = {
   branch: "release-please--branches--main--components--ableton-dj-mcp",
-  sha: "215c4e68",
-  buildTime: "2026-10-25T14:39:39.501Z"
+  sha: "e64401d4",
+  buildTime: "2026-10-25T17:54:58.623Z"
 };
 
 function buildIdentifier() {
