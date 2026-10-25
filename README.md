@@ -4,21 +4,24 @@
 [![Release](https://img.shields.io/github/v/release/gpulga/ableton-dj-mcp?label=release)](https://github.com/gpulga/ableton-dj-mcp/releases/latest)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](./LICENSE)
 
-<br>
+## Vision
 
-<p align="center"><b>The supreme form of communication is music.</b></p>
+> **The supreme form of communication is music.**
+>
+> The final evolution of human communication is music. Music doesn't reach you
+> through words alone. It speaks soul to soul, thought by thought, synapse by
+> synapse.
+>
+> It is the most complete way to share something with someone: two people inside
+> the same sound, at the same moment.
+>
+> Or more than two. Many, in tune and in union.
+>
+> — Gabriel Pulga, creator
 
-<p align="center"><i>
-The final evolution of human communication is music. Music doesn't reach you<br>
-through words alone. It speaks soul to soul, thought by thought, synapse by synapse.<br><br>
-It is the most complete way to share something with someone:<br>
-two people inside the same sound, at the same moment.<br><br>
-Or more than two. Many, in tune and in union.
-</i></p>
+[Read the full vision →](./docs/Vision.md)
 
-<p align="center">— Gabriel Pulga, creator · <a href="./docs/Vision.md">Read the vision</a></p>
-
-<br>
+## What it is
 
 **An AI studio partner for DJs and electronic music producers.** Describe the
 idea, and Claude builds it in your open Ableton Live set: grooves, basslines,
