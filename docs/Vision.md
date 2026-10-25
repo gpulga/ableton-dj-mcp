@@ -9,8 +9,6 @@
 > It is the most complete way to share something with someone: two people inside
 > the same sound, at the same moment.
 >
-> Or more than two. Many, in tune and in union.
->
 > — Gabriel Pulga, creator of Ableton DJ MCP
 
 That is why this exists. A dancefloor is the clearest example we know: people
