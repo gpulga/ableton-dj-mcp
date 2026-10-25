@@ -108,6 +108,110 @@ your AI client to it. A Python remote script reaches what Max can't: the
 browser, clip envelopes, Live's audio conversions and undo history.
 [Architecture →](./docs/contributing/Architecture.md)
 
+## FAQ
+
+<details>
+<summary><b>Which version of Ableton Live do I need?</b></summary>
+
+Live 12.3 or later with Max for Live: Suite, or Standard with the Max for Live
+add-on. Loading samples into Simpler and drum pads needs Live 12.4. Intro and
+Lite don't include Max for Live, so they can't run the device.
+
+</details>
+
+<details>
+<summary><b>Which AI can I use?</b></summary>
+
+Any MCP client. Claude Code is the main target and gets the smoothest setup.
+Claude Desktop, Cursor and other MCP clients work too: see
+[Setup](./docs/Setup.md).
+
+</details>
+
+<details>
+<summary><b>Is it free?</b></summary>
+
+Yes. Ableton DJ MCP is free and open source under GPL-3.0-or-later. You need
+your own Ableton Live license and whatever plan your AI client requires.
+
+</details>
+
+<details>
+<summary><b>Does the AI hear my music?</b></summary>
+
+Not yet. It reads the set: tracks, clips, notes, devices, parameters, automation
+and arrangement. It doesn't analyze audio. Listening to the mix is next on the
+[Roadmap](./docs/Roadmap.md).
+
+</details>
+
+<details>
+<summary><b>Can it mess up my project?</b></summary>
+
+It only changes what you ask for, through tool calls you can see. With the Live
+Browser Bridge installed, each AI action is one undo step, so Cmd+Z (Ctrl+Z on
+Windows) reverts exactly the last change. Save your set before big edits, the
+same as with any session.
+
+</details>
+
+<details>
+<summary><b>Where does my music go?</b></summary>
+
+The server runs on your computer, inside the Live device. Your AI client sees
+what the tools return (track names, notes, device settings), the same as any
+other conversation with it. Audio files stay on your machine.
+
+</details>
+
+<details>
+<summary><b>Can it use my own samples?</b></summary>
+
+Yes. It searches the folders you've added to Live's Places, reading BPM and key
+from file names, and can load any sample into a Simpler, a drum pad or an audio
+clip.
+
+</details>
+
+<details>
+<summary><b>What is the Live Browser Bridge?</b></summary>
+
+A small Python remote script that `npm run setup` installs alongside the device.
+It reaches the parts of Live that Max for Live can't: the browser, clip
+automation, audio-to-MIDI conversion and undo grouping. Enable it once under
+Live's Preferences → Link, Tempo & MIDI → Control Surface.
+
+</details>
+
+<details>
+<summary><b>macOS or Windows?</b></summary>
+
+Both. Linux isn't supported, since Ableton Live doesn't run there.
+
+</details>
+
+<details>
+<summary><b>How do I update?</b></summary>
+
+```bash
+cd ableton-dj-mcp
+git pull
+npm run setup
+```
+
+Then quit and reopen Live, so it loads the new bridge.
+
+</details>
+
+<details>
+<summary><b>Something isn't working</b></summary>
+
+Check [Troubleshooting](./docs/Setup.md#troubleshooting), then
+[open an issue](https://github.com/gpulga/ableton-dj-mcp/issues) or ask in
+[Discussions](https://github.com/gpulga/ableton-dj-mcp/discussions).
+
+</details>
+
 ## Docs
 
 [Setup](./docs/Setup.md) · [Tools](./docs/Tools-Reference.md) ·
