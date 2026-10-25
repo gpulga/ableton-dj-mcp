@@ -1,16 +1,29 @@
-<img src="docs/images/banner.svg" alt="Ableton DJ MCP: an AI studio partner for DJs and electronic producers, inside Ableton Live. A prompt types 'write a rolling bassline in A minor, 8 bars' and a playhead sweeps a piano roll as the notes light up." width="100%">
+<img src="docs/images/banner.svg" alt="Ableton DJ MCP. AI studio partner for DJs and electronic producers, inside Ableton Live. A step sequencer runs a four-to-the-floor kick at 124 BPM." width="100%">
 
 [![CI](https://github.com/gpulga/ableton-dj-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/gpulga/ableton-dj-mcp/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/gpulga/ableton-dj-mcp?label=release)](https://github.com/gpulga/ableton-dj-mcp/releases/latest)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](./LICENSE)
 
+<br>
+
+<p align="center"><b>The supreme form of communication is music.</b></p>
+
+<p align="center"><i>
+The final evolution of human communication is music. Music doesn't reach you<br>
+through words alone. It speaks soul to soul, thought by thought, synapse by synapse.<br><br>
+It is the most complete way to share something with someone:<br>
+two people inside the same sound, at the same moment.<br><br>
+Or more than two. Many, in tune and in union.
+</i></p>
+
+<p align="center">— Gabriel Pulga, creator · <a href="./docs/Vision.md">Read the vision</a></p>
+
+<br>
+
 **An AI studio partner for DJs and electronic music producers.** Describe the
 idea, and Claude builds it in your open Ableton Live set: grooves, basslines,
 sounds from your own sample libraries, filter sweeps, full arrangements. You
 stay in the creative seat.
-
-Music is the most complete way people share something with each other. This tool
-exists to help more of it get made. [Read the vision →](./docs/Vision.md)
 
 ## Install
 
