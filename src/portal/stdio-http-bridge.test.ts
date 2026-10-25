@@ -190,7 +190,7 @@ async function startAndGetCallHandler(
 function expectBrandedErrorText(response: {
   content: Array<{ type: string; text: string }>;
 }): void {
-  expect(response.content[0]?.text).toContain("ableton-dj-mcp.org");
+  expect(response.content[0]?.text).toContain("docs/Setup.md#troubleshooting");
   expect(response.content[0]?.text).toContain(`(Ableton DJ MCP ${VERSION})`);
 }
 
