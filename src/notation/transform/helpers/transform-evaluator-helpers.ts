@@ -174,7 +174,6 @@ function processAssignment(
       bar,
       beat,
       numerator,
-      denominator,
       clipTimeRange,
       position,
     );
@@ -207,8 +206,7 @@ function processAssignment(
  * @param assignment - Transform assignment
  * @param bar - Note bar number (optional)
  * @param beat - Note beat number (optional)
- * @param numerator - Time signature numerator
- * @param denominator - Time signature denominator
+ * @param numerator - Time signature numerator (musical beats per bar)
  * @param clipTimeRange - Clip time range (optional)
  * @param position - Note position in beats
  * @returns Time range result or skip indicator
@@ -218,7 +216,6 @@ export function calculateActiveTimeRange(
   bar: number | undefined,
   beat: number | undefined,
   numerator: number,
-  denominator: number,
   clipTimeRange: TimeRange | undefined,
   position: number,
 ): TimeRangeResult {
@@ -234,8 +231,9 @@ export function calculateActiveTimeRange(
       return { skip: true }; // Skip this assignment - note outside time range
     }
 
-    // Convert assignment timeRange to musical beats
-    const musicalBeatsPerBar = numerator * (4 / denominator);
+    // Convert assignment timeRange to musical beats, the unit note positions
+    // are in (numerator beats per bar: 6/8 has six eighth-note beats)
+    const musicalBeatsPerBar = numerator;
     const startBeats = barBeatToBeats(
       `${startBar}|${startBeat}`,
       musicalBeatsPerBar,
