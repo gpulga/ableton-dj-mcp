@@ -380,3 +380,64 @@ describe("transform timing/duration in non-4/4 time signatures", () => {
     });
   });
 });
+
+describe("time-ranged ramp in non-4/4 time signatures", () => {
+  /**
+   * One note per musical beat across a bar, starting at an offset
+   * @param count - Notes in the bar
+   * @param step - Ableton beats per musical beat
+   * @param offset - Bar start in Ableton beats
+   * @returns Notes
+   */
+  function bar(count: number, step: number, offset: number) {
+    return Array.from({ length: count }, (_, i) =>
+      createTestNote({ start_time: offset + i * step, duration: step }),
+    ).flat();
+  }
+
+  /**
+   * Velocities after a ramp over one bar
+   * @param barNumber - Bar the notes and the range are in (1-based)
+   * @param numerator - Time signature numerator
+   * @param denominator - Time signature denominator
+   * @returns Rounded velocities
+   */
+  function rampVelocities(
+    barNumber: number,
+    numerator: number,
+    denominator: number,
+  ): number[] {
+    const step = 4 / denominator;
+    const notes = bar(numerator, step, (barNumber - 1) * numerator * step);
+
+    applyTransforms(
+      notes,
+      `${barNumber}|1-${barNumber}|${numerator}: velocity = ramp(10, 120)`,
+      numerator,
+      denominator,
+    );
+
+    return notes.map((n) => Math.round(n.velocity));
+  }
+
+  it.each([
+    [6, 8],
+    [7, 8],
+    [3, 2],
+    [4, 4],
+  ])("ramps bar 2 the same as bar 1 in %i/%i", (numerator, denominator) => {
+    const first = rampVelocities(1, numerator, denominator);
+
+    expect(first[0]).toBe(10);
+    expect(first.at(-1)).toBe(120);
+    expect(rampVelocities(2, numerator, denominator)).toStrictEqual(first);
+  });
+
+  it("keeps every note in a later 3/2 bar instead of deleting them", () => {
+    const notes = bar(3, 2, 12);
+
+    applyTransforms(notes, "3|1-3|3: velocity = ramp(10, 120)", 3, 2);
+
+    expect(notes).toHaveLength(3);
+  });
+});
