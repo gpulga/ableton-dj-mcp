@@ -21,7 +21,8 @@ import { VERSION } from "#src/shared/version.ts";
 import { logger } from "./file-logger.ts";
 import { LazyBoot } from "./lazy-boot.ts";
 
-const SETUP_URL = "https://ableton-dj-mcp.org/installation";
+const SETUP_URL =
+  "https://github.com/gpulga/ableton-dj-mcp/blob/main/docs/Setup.md#troubleshooting";
 
 interface BridgeOptions {
   timeout?: number;
