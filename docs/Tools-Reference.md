@@ -13,16 +13,25 @@ Connect to Ableton Live. Call this first before any other tool. No parameters.
 
 ### `adj-context`
 
-Read and write a persistent memory string visible to the AI across tool calls.
-Useful for storing project state, musical decisions, or notes. Also browses the
-configured sample folder. Memory is off until **Use project memory** is ticked
-in the device's Context tab; until then `read` and `write` report it as
-disabled.
+Read and write persistent project memory, saved with the Live Set, as a set of
+small facts. Also browses the configured sample folder. Memory is off until
+**Use project memory** is ticked in the device's Context tab; until then `read`,
+`write` and `forget` report it as disabled.
 
-- `read` — return current context
-- `write` — overwrite context with new content
+- `read` — the fact index (`facts: [{ id, about }]`); with `fact`, that fact's
+  `id`, `about` and `content`
+- `write` — create or replace one fact: `fact` (kebab-case id, default `notes`),
+  `content`, and `about` (one-line description, required when creating). Other
+  facts are untouched. Refused if the whole store would exceed 10,000 chars
+- `forget` — remove the fact named by `fact`
 - `search` — list audio samples in the configured `sampleFolder` (set in config)
   as a tree with metadata
+
+Memory is plain text in the Context tab, one section per fact, so it can also be
+edited by hand. A section opens with a header line `## <id>: <about>`. Text
+before the first header (all memory written before facts existed) is the fact
+`notes`. Once memory has at least one header, `adj-connect` returns
+`memoryFacts` (the index) instead of the full `memoryContent`.
 
 ### `adj-guide`
 

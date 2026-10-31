@@ -35,6 +35,27 @@ describe("connect", () => {
     );
   });
 
+  it("returns the fact index instead of the text once memory has facts", () => {
+    setupConnectMocks();
+    vi.mocked(getHostTrackIndex).mockReturnValue(0);
+
+    const context: Partial<ToolContext> = {
+      memory: {
+        enabled: true,
+        writable: true,
+        content: "old text\n## bass: Bass sound\nReese",
+      },
+    };
+
+    const result = connect({}, context);
+
+    expect(result.memoryFacts).toStrictEqual([
+      { id: "notes", about: "old text" },
+      { id: "bass", about: "Bass sound" },
+    ]);
+    expect(result.memoryContent).toBeUndefined();
+  });
+
   it("excludes memory when context is disabled", () => {
     setupConnectMocks({ liveSetName: "Project without Notes" });
     vi.mocked(getHostTrackIndex).mockReturnValue(0);
