@@ -34,34 +34,58 @@ describe("context - memory actions", () => {
       expect(outlet).not.toHaveBeenCalled();
     });
 
-    it("returns full context when project context is enabled", () => {
+    it.each([
+      ["writable", true],
+      ["not writable", false],
+    ])("returns the fact index when %s", (_, writable) => {
       toolContext.memory!.enabled = true;
-      toolContext.memory!.writable = true;
-      toolContext.memory!.content = "test content";
+      toolContext.memory!.writable = writable;
+      toolContext.memory!.content = "old text\n## bass: Bass sound\nReese";
 
       const result = context({ action: "read" }, toolContext);
 
       expect(result).toStrictEqual({
         enabled: true,
-        writable: true,
-        content: "test content",
+        writable,
+        facts: [
+          { id: "notes", about: "old text" },
+          { id: "bass", about: "Bass sound" },
+        ],
       });
       expect(outlet).not.toHaveBeenCalled();
     });
 
-    it("returns full context with writable false when not writable", () => {
+    it("returns one fact's text", () => {
       toolContext.memory!.enabled = true;
-      toolContext.memory!.writable = false;
-      toolContext.memory!.content = "test content";
+      toolContext.memory!.content =
+        "old text\n## bass: Bass sound\nReese\ndetuned";
 
-      const result = context({ action: "read" }, toolContext);
-
-      expect(result).toStrictEqual({
+      expect(
+        context({ action: "read", fact: "bass" }, toolContext),
+      ).toStrictEqual({
         enabled: true,
         writable: false,
-        content: "test content",
+        id: "bass",
+        about: "Bass sound",
+        content: "Reese\ndetuned",
       });
-      expect(outlet).not.toHaveBeenCalled();
+    });
+
+    it("throws for an unknown fact, naming the known ones", () => {
+      toolContext.memory!.enabled = true;
+      toolContext.memory!.content = "old text\n## bass: Bass sound\nReese";
+
+      expect(() =>
+        context({ action: "read", fact: "keys" }, toolContext),
+      ).toThrow("Unknown fact 'keys' - known facts: notes, bass");
+    });
+
+    it("says none when memory is empty", () => {
+      toolContext.memory!.enabled = true;
+
+      expect(() =>
+        context({ action: "read", fact: "keys" }, toolContext),
+      ).toThrow("known facts: none");
     });
   });
 
@@ -127,9 +151,198 @@ describe("context - memory actions", () => {
       expect(result).toStrictEqual({
         enabled: true,
         writable: true,
+        id: "notes",
+        about: "new content",
         content: "new content",
       });
       expect(outlet).toHaveBeenCalledWith(0, "update_memory", "new content");
+    });
+
+    describe("facts", () => {
+      beforeEach(() => {
+        toolContext.memory!.enabled = true;
+        toolContext.memory!.writable = true;
+      });
+
+      it("adds a fact to legacy memory without changing the old text", () => {
+        toolContext.memory!.content = "old text\nline two";
+
+        const result = context(
+          {
+            action: "write",
+            fact: "bass",
+            about: "Bass sound",
+            content: "Reese",
+          },
+          toolContext,
+        );
+
+        const stored = "old text\nline two\n## bass: Bass sound\nReese";
+
+        expect(toolContext.memory!.content).toBe(stored);
+        expect(result).toStrictEqual({
+          enabled: true,
+          writable: true,
+          id: "bass",
+          about: "Bass sound",
+          content: "Reese",
+        });
+        expect(outlet).toHaveBeenCalledExactlyOnceWith(
+          0,
+          "update_memory",
+          stored,
+        );
+      });
+
+      it("replaces only the written fact", () => {
+        toolContext.memory!.content =
+          "## bass: Bass\nReese\n\n## tempo: Tempo\n128";
+
+        context({ action: "write", fact: "bass", content: "Sub" }, toolContext);
+
+        expect(toolContext.memory!.content).toBe(
+          "## bass: Bass\nSub\n## tempo: Tempo\n128",
+        );
+      });
+
+      it("updates a fact's description when about is given", () => {
+        toolContext.memory!.content = "## bass: Bass\nReese";
+
+        context(
+          {
+            action: "write",
+            fact: "bass",
+            about: "Bass patch",
+            content: "Sub",
+          },
+          toolContext,
+        );
+
+        expect(toolContext.memory!.content).toBe("## bass: Bass patch\nSub");
+      });
+
+      it("gives legacy notes a header when about is given", () => {
+        toolContext.memory!.content = "old text";
+
+        context(
+          { action: "write", fact: "notes", about: "General", content: "new" },
+          toolContext,
+        );
+
+        expect(toolContext.memory!.content).toBe("## notes: General\nnew");
+      });
+
+      it("keeps legacy text first when written into structured memory", () => {
+        toolContext.memory!.content = "## bass: Bass\nReese";
+
+        context({ action: "write", content: "loose note" }, toolContext);
+
+        expect(toolContext.memory!.content).toBe(
+          "loose note\n## bass: Bass\nReese",
+        );
+      });
+
+      it("requires about for a new fact", () => {
+        expect(() =>
+          context(
+            { action: "write", fact: "bass", content: "Reese" },
+            toolContext,
+          ),
+        ).toThrow("about required when creating fact 'bass'");
+        expect(outlet).not.toHaveBeenCalled();
+      });
+
+      it("rejects multi-line about", () => {
+        expect(() =>
+          context(
+            { action: "write", fact: "bass", about: "a\nb", content: "Reese" },
+            toolContext,
+          ),
+        ).toThrow("about must be a single line");
+      });
+
+      it("rejects content that contains a header line", () => {
+        expect(() =>
+          context(
+            {
+              action: "write",
+              fact: "bass",
+              about: "Bass",
+              content: "Reese\n## tempo: Tempo",
+            },
+            toolContext,
+          ),
+        ).toThrow("must not contain fact header lines");
+        expect(outlet).not.toHaveBeenCalled();
+      });
+
+      it("refuses a store over 10,000 chars and keeps memory unchanged", () => {
+        toolContext.memory!.content = `## big: Big\n${"x".repeat(9_990)}`;
+
+        expect(() =>
+          context(
+            {
+              action: "write",
+              fact: "more",
+              about: "More",
+              content: "y".repeat(50),
+            },
+            toolContext,
+          ),
+        ).toThrow(
+          /Memory would be 10\d{3} chars \(max 10000\) - forget or shorten a fact/,
+        );
+        expect(toolContext.memory!.content).toBe(
+          `## big: Big\n${"x".repeat(9_990)}`,
+        );
+        expect(outlet).not.toHaveBeenCalled();
+      });
+    });
+  });
+
+  describe("forget action", () => {
+    beforeEach(() => {
+      toolContext.memory!.enabled = true;
+      toolContext.memory!.writable = true;
+      toolContext.memory!.content = "old text\n## bass: Bass\nReese";
+    });
+
+    it("removes one fact and returns the remaining index", () => {
+      const result = context({ action: "forget", fact: "notes" }, toolContext);
+
+      expect(toolContext.memory!.content).toBe("## bass: Bass\nReese");
+      expect(result).toStrictEqual({
+        enabled: true,
+        writable: true,
+        facts: [{ id: "bass", about: "Bass" }],
+      });
+      expect(outlet).toHaveBeenCalledWith(
+        0,
+        "update_memory",
+        "## bass: Bass\nReese",
+      );
+    });
+
+    it("throws for an unknown fact", () => {
+      expect(() =>
+        context({ action: "forget", fact: "keys" }, toolContext),
+      ).toThrow("Unknown fact 'keys' - known facts: notes, bass");
+      expect(outlet).not.toHaveBeenCalled();
+    });
+
+    it("requires fact", () => {
+      expect(() => context({ action: "forget" }, toolContext)).toThrow(
+        "fact required for forget action",
+      );
+    });
+
+    it("throws when not writable", () => {
+      toolContext.memory!.writable = false;
+
+      expect(() =>
+        context({ action: "forget", fact: "bass" }, toolContext),
+      ).toThrow("AI updates are disabled");
+      expect(outlet).not.toHaveBeenCalled();
     });
   });
 

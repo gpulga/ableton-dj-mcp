@@ -10,6 +10,12 @@ import {
 import { VERSION } from "#src/shared/version.ts";
 import { skills as basicSkills } from "#src/skills/basic.ts";
 import { skills } from "#src/skills/standard.ts";
+import {
+  type FactSummary,
+  hasFactHeaders,
+  parseMemory,
+  summarizeFacts,
+} from "./memory-store.ts";
 
 interface LiveSetInfo {
   name?: unknown;
@@ -39,6 +45,7 @@ interface ConnectResult {
   liveSet: LiveSetInfo;
   skills?: string;
   memoryContent?: string;
+  memoryFacts?: FactSummary[];
   nextStep: string;
 }
 
@@ -117,9 +124,15 @@ export function connect(
       "Report the connection status and Live Set overview to the user, then wait for their instructions.",
   };
 
-  // Include memory content if enabled
+  // Include memory if enabled: the fact index once it has facts, else the text
   if (context.memory?.enabled && context.memory.content) {
-    result.memoryContent = context.memory.content;
+    const { content } = context.memory;
+
+    if (hasFactHeaders(content)) {
+      result.memoryFacts = summarizeFacts(parseMemory(content));
+    } else {
+      result.memoryContent = content;
+    }
   }
 
   return result;
