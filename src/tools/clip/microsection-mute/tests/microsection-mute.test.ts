@@ -2,8 +2,19 @@
 // Copyright (C) 2026 Gabriel Pulga
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-import { describe, expect, it } from "vitest";
-import { buildTransforms, parseMicrosections } from "../microsection-mute.ts";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { applyTransforms } from "#src/notation/transform/transform-evaluator.ts";
+import { type NoteEvent } from "#src/notation/types.ts";
+import { updateClip } from "#src/tools/clip/update/update-clip.ts";
+import {
+  buildTransforms,
+  microsectionMute,
+  parseMicrosections,
+} from "../microsection-mute.ts";
+
+vi.mock(import("#src/tools/clip/update/update-clip.ts"), () => ({
+  updateClip: vi.fn(),
+}));
 
 describe("parseMicrosections", () => {
   it("parses a 4-microsection arc", () => {
@@ -149,5 +160,125 @@ describe("buildTransforms", () => {
     const transforms = buildTransforms(parseMicrosections("1-1: C3"));
 
     expect(transforms[0]).toMatch(/-1\|4\.999:/);
+  });
+});
+
+describe("buildTransforms in any meter", () => {
+  const meters = [
+    [4, 4],
+    [3, 4],
+    [5, 4],
+    [7, 4],
+    [6, 8],
+  ] as const;
+
+  /**
+   * Mute bar 2 of a 3-bar clip with one note per beat
+   * @param numerator - Time signature numerator
+   * @param denominator - Time signature denominator
+   * @returns 0-based beat indexes of the notes that keep a velocity
+   */
+  function survivingBeats(numerator: number, denominator: number): number[] {
+    const beat = 4 / denominator;
+    const notes: NoteEvent[] = Array.from(
+      { length: numerator * 3 },
+      (_, i) => ({
+        pitch: 60,
+        start_time: i * beat,
+        duration: 0.25,
+        velocity: 100,
+        probability: 1,
+        velocity_deviation: 0,
+      }),
+    );
+    const transforms = buildTransforms(parseMicrosections("2-2: all"));
+
+    applyTransforms(notes, transforms.join("\n"), numerator, denominator);
+
+    return notes
+      .filter((n) => n.velocity > 0)
+      .map((n) => Math.round(n.start_time / beat));
+  }
+
+  it.each(meters)(
+    "mutes all of bar 2 and nothing else in %i/%i",
+    (numerator, denominator) => {
+      const bar1 = Array.from({ length: numerator }, (_, i) => i);
+      const bar3 = bar1.map((i) => i + numerator * 2);
+
+      expect(survivingBeats(numerator, denominator)).toStrictEqual([
+        ...bar1,
+        ...bar3,
+      ]);
+    },
+  );
+});
+
+describe("microsectionMute", () => {
+  beforeEach(() => {
+    vi.mocked(updateClip).mockReset();
+  });
+
+  it("throws when clipIds is missing", async () => {
+    await expect(
+      microsectionMute({ microsections: "1-1: all" }),
+    ).rejects.toThrow("microsectionMute failed: clipIds is required");
+  });
+
+  it("throws when microsections is missing", async () => {
+    await expect(microsectionMute({ clipIds: "1" })).rejects.toThrow(
+      "microsectionMute failed: microsections is required",
+    );
+  });
+
+  it("returns zeros and skips updateClip when only peaks are given", async () => {
+    const result = await microsectionMute({
+      clipIds: "1",
+      microsections: "1-2:\n3-4:",
+    });
+
+    expect(result).toStrictEqual({
+      clipsUpdated: 0,
+      transformsApplied: 0,
+      transforms: "",
+    });
+    expect(updateClip).not.toHaveBeenCalled();
+  });
+
+  it("merges the transforms into the clips and counts an array result", async () => {
+    vi.mocked(updateClip).mockResolvedValue([{ id: "1" }, { id: "2" }]);
+    const context = { smallModelMode: false };
+
+    const result = await microsectionMute(
+      { clipIds: "1,2", microsections: "1-2: C3, D3" },
+      context,
+    );
+
+    const transforms = buildTransforms(parseMicrosections("1-2: C3, D3"));
+
+    expect(updateClip).toHaveBeenCalledExactlyOnceWith(
+      {
+        ids: "1,2",
+        transforms: transforms.join("\n"),
+        noteUpdateMode: "merge",
+      },
+      context,
+    );
+    expect(result).toStrictEqual({
+      clipsUpdated: 2,
+      transformsApplied: 2,
+      transforms: transforms.join("\n"),
+    });
+  });
+
+  it("counts a single-object result as one clip", async () => {
+    vi.mocked(updateClip).mockResolvedValue({ id: "1" });
+
+    const result = await microsectionMute({
+      clipIds: "1",
+      microsections: "1-1: all",
+    });
+
+    expect(result.clipsUpdated).toBe(1);
   });
 });
