@@ -120,17 +120,15 @@ describe("buildTransforms", () => {
     const parsed = parseMicrosections("1-2: Eb1, F#1");
 
     expect(buildTransforms(parsed)).toStrictEqual([
-      "Eb1 1|1-2|4.999: velocity = 0",
-      "F#1 1|1-2|4.999: velocity = 0",
+      "Eb1 1|1-2|999: velocity = 0",
+      "F#1 1|1-2|999: velocity = 0",
     ]);
   });
 
   it("emits a single whole-clip transform when pitches is 'all'", () => {
     const parsed = parseMicrosections("7-8: all");
 
-    expect(buildTransforms(parsed)).toStrictEqual([
-      "7|1-8|4.999: velocity = 0",
-    ]);
+    expect(buildTransforms(parsed)).toStrictEqual(["7|1-8|999: velocity = 0"]);
   });
 
   it("emits no transform for an empty pitch list (peak microsection)", () => {
@@ -150,16 +148,16 @@ describe("buildTransforms", () => {
     const transforms = buildTransforms(parseMicrosections(input));
 
     expect(transforms).toStrictEqual([
-      "Eb1 1|1-2|4.999: velocity = 0",
-      "F#1 3|1-4|4.999: velocity = 0",
-      "7|1-8|4.999: velocity = 0",
+      "Eb1 1|1-2|999: velocity = 0",
+      "F#1 3|1-4|999: velocity = 0",
+      "7|1-8|999: velocity = 0",
     ]);
   });
 
-  it("uses 4.999 as end-beat to cover the full final bar", () => {
+  it("covers the full final bar in any meter", () => {
     const transforms = buildTransforms(parseMicrosections("1-1: C3"));
 
-    expect(transforms[0]).toMatch(/-1\|4\.999:/);
+    expect(transforms[0]).toBe("C3 1|1-1|999: velocity = 0");
   });
 });
 
