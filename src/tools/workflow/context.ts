@@ -5,6 +5,7 @@
 import {
   type MemoryResult,
   type SamplesResult,
+  handleForgetMemory,
   handleReadMemory,
   handleSearchSamples,
   handleWriteMemory,
@@ -12,6 +13,8 @@ import {
 
 interface ContextArgs {
   action?: string;
+  fact?: string;
+  about?: string;
   content?: string;
   search?: string;
 }
@@ -21,21 +24,25 @@ type ContextResult = MemoryResult | SamplesResult;
 /**
  * Project context tool for Ableton DJ MCP (memory + samples)
  * @param args - The parameters
- * @param args.action - Action to perform (read, write, search)
- * @param args.content - Memory content (required for write)
+ * @param args.action - Action to perform (read, write, forget, search)
+ * @param args.fact - Fact id (read one, write, forget)
+ * @param args.about - One-line fact description (write; required for a new fact)
+ * @param args.content - Fact text (required for write)
  * @param args.search - Search filter (for search)
  * @param toolContext - The context object
  * @returns Result varies by action
  */
 export function context(
-  { action, content, search }: ContextArgs = {},
+  { action, fact, about, content, search }: ContextArgs = {},
   toolContext: Partial<ToolContext> = {},
 ): ContextResult {
   switch (action) {
     case "read":
-      return handleReadMemory(toolContext);
+      return handleReadMemory(fact, toolContext);
     case "write":
-      return handleWriteMemory(content, toolContext);
+      return handleWriteMemory({ fact, about, content }, toolContext);
+    case "forget":
+      return handleForgetMemory(fact, toolContext);
     case "search":
       return handleSearchSamples(search, toolContext);
     default:
