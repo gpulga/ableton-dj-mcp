@@ -83,6 +83,8 @@ export async function microsectionMute(
 }
 
 const COMMENT_PREFIX = "#";
+/** End beat larger than any bar, so a range covers its whole final bar */
+const END_BEAT_ANY_METER = 999;
 const ALL_TOKEN = "all";
 
 /**
@@ -199,11 +201,10 @@ function parsePitchList(mutePart: string): string[] | null {
  * Convert parsed microsections to transform strings consumable by
  * `adj-update-clip`.
  *
- * End-bar coverage uses `<barEnd>|4.999` to include the last 16th of the
- * final bar (transform time-range filter is inclusive). Assumes 4/4 time.
- * For non-4/4 clips, lower beat counts still match correctly because the
- * filter clamps against the actual note position; the upper bound of 4.999
- * just defines a generous "everything in this bar" envelope.
+ * Each range ends at `<barEnd>|${END_BEAT_ANY_METER}`. The transform time
+ * filter compares (bar, beat) as a pair, so a beat past any real bar length
+ * covers the whole final bar in every time signature without reaching into
+ * the next bar. One string then works for every clip in a multi-clip call.
  *
  * @param microsections - Parsed microsection entries
  * @returns Transform expression strings, one per pitch × range
@@ -214,7 +215,7 @@ export function buildTransforms(microsections: ParsedMicrosection[]): string[] {
   for (const ms of microsections) {
     if (ms.pitches !== null && ms.pitches.length === 0) continue;
 
-    const range = `${ms.barStart}|1-${ms.barEnd}|4.999`;
+    const range = `${ms.barStart}|1-${ms.barEnd}|${END_BEAT_ANY_METER}`;
 
     if (ms.pitches === null) {
       transforms.push(`${range}: velocity = 0`);
