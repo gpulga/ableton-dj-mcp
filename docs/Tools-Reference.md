@@ -22,7 +22,7 @@ small facts. Also browses the configured sample folder. Memory is off until
   `id`, `about` and `content`
 - `write` — create or replace one fact: `fact` (kebab-case id, default `notes`),
   `content`, and `about` (one-line description, required when creating). Other
-  facts are untouched. Refused if the whole store would exceed 10,000 chars
+  facts are untouched. Refused if it grows the whole store past 10,000 chars
 - `forget` — remove the fact named by `fact`
 - `search` — list audio samples in the configured `sampleFolder` (set in config)
   as a tree with metadata
