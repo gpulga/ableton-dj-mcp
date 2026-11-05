@@ -11,6 +11,7 @@ import {
   legacyAbout,
   parseMemory,
   serializeMemory,
+  splitLines,
   summarizeFacts,
 } from "./memory-store.ts";
 import { readSamples } from "./read-samples.ts";
@@ -85,7 +86,7 @@ export function handleWriteMemory(
     throw new Error("Content required for write action");
   }
 
-  if (content.split("\n").some(isFactHeader)) {
+  if (splitLines(content).some(isFactHeader)) {
     throw new Error(
       "Content must not contain fact header lines (## <id>: <about>) - write each fact separately",
     );
@@ -97,7 +98,7 @@ export function handleWriteMemory(
 
   const facts = parseMemory(memory.content);
   const existing = facts.find((f) => f.id === fact);
-  const lines = content.split("\n");
+  const lines = splitLines(content);
   let written: MemoryFact;
 
   if (existing) {
@@ -201,7 +202,12 @@ function saveMemory(
 ): void {
   const content = serializeMemory(facts);
 
-  if (content.length > MEMORY_MAX_CHARS) {
+  // A change that doesn't grow the store is always allowed, so an over-cap
+  // store (hand-edited in the Context tab) can still be shrunk
+  if (
+    content.length > MEMORY_MAX_CHARS &&
+    content.length > memory.content.length
+  ) {
     throw new Error(
       `Memory would be ${content.length} chars (max ${MEMORY_MAX_CHARS}) - forget or shorten a fact`,
     );

@@ -323,6 +323,17 @@ describe("context - memory actions", () => {
       );
     });
 
+    it("forgets a small fact from a store already over the cap", () => {
+      const big = `## a: A\n${"x".repeat(10_050)}`;
+
+      toolContext.memory!.content = `${big}\n## b: B\nsmall`;
+
+      context({ action: "forget", fact: "b" }, toolContext);
+
+      expect(toolContext.memory!.content).toBe(big);
+      expect(outlet).toHaveBeenCalledWith(0, "update_memory", big);
+    });
+
     it("throws for an unknown fact", () => {
       expect(() =>
         context({ action: "forget", fact: "keys" }, toolContext),

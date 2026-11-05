@@ -55,6 +55,19 @@ describe("memory-store", () => {
     expect(serializeMemory(parseMemory(content))).toBe(content);
   });
 
+  it("reads \\r and \\r\\n line breaks like \\n", () => {
+    const ids = (content: string) => parseMemory(content).map((f) => f.id);
+
+    expect(ids("## bass: Bass\rReese\r## tempo: Tempo\r128")).toStrictEqual([
+      "bass",
+      "tempo",
+    ]);
+    expect(
+      ids("## bass: Bass\r\nReese\r\n## tempo: Tempo\r\n128"),
+    ).toStrictEqual(["bass", "tempo"]);
+    expect(hasFactHeaders("plain\r## bass: Bass")).toBe(true);
+  });
+
   it("detects header lines", () => {
     expect(hasFactHeaders("plain\n## Not: a header")).toBe(false);
     expect(hasFactHeaders("plain\n## bass: Bass")).toBe(true);

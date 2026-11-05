@@ -12,6 +12,15 @@ export const LEGACY_FACT_ID = "notes";
 const LEGACY_ABOUT_MAX = 80;
 const HEADER_PATTERN = /^## ([a-z0-9-]{1,40}): (.*)$/;
 
+/**
+ * Split text into lines, accepting \n, \r\n or \r line breaks
+ * @param text - Text to split
+ * @returns Lines without their line breaks
+ */
+export function splitLines(text: string): string[] {
+  return text.split(/\r\n?|\n/);
+}
+
 export interface MemoryFact {
   id: string;
   about: string;
@@ -35,7 +44,7 @@ export function parseMemory(content: string): MemoryFact[] {
   const facts: MemoryFact[] = [];
   const preamble: string[] = [];
 
-  for (const line of content.split("\n")) {
+  for (const line of splitLines(content)) {
     const match = HEADER_PATTERN.exec(line);
 
     if (match) {
@@ -86,7 +95,7 @@ export function serializeMemory(facts: MemoryFact[]): string {
  * @returns True when structured
  */
 export function hasFactHeaders(content: string): boolean {
-  return content.split("\n").some(isFactHeader);
+  return splitLines(content).some(isFactHeader);
 }
 
 /**
@@ -113,7 +122,7 @@ export function factText(fact: MemoryFact): string {
  * @returns One-line description
  */
 export function legacyAbout(text: string): string {
-  const firstLine = text.split("\n").find((line) => line.trim() !== "") ?? "";
+  const firstLine = splitLines(text).find((line) => line.trim() !== "") ?? "";
 
   return firstLine.trim().slice(0, LEGACY_ABOUT_MAX);
 }
